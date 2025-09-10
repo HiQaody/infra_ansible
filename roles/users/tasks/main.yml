@@ -1,0 +1,20 @@
+---
+- name: "Créer les utilisateurs"
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    groups: "{{ item.groups | default(omit) }}"
+    append: yes
+    create_home: yes
+  loop: "{{ users_create }}"
+
+- name: "Autoriser sudo sans mot de passe (optionnel)"
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/{{ item.name }}"
+    content: "{{ item.name }} ALL=(ALL) NOPASSWD:ALL"
+    owner: root
+    group: root
+    mode: '0440'
+  when: item.sudo | default(false)
+  loop: "{{ users_create }}"

@@ -1,0 +1,56 @@
+---
+docker_users:
+  - "chutambohobe"
+
+jenkins_port: 8081
+
+postgresql_port: 5433
+postgresql_version: 15
+postgresql_users:
+  - name: myuser
+    password: mypassword
+    db: mydb
+
+pgadmin_port: 5050
+pgadmin_webserver: nginx
+pgadmin_admin_email: "admin@exemple.com"
+pgadmin_admin_password: "MonSuperMotDePasse"
+pgadmin_ssl_enabled: true
+pgadmin_ssl_cert_src: ""
+pgadmin_ssl_key_src: ""
+pgadmin_allowed_ips:
+  - 192.168.0.0/24
+  - 127.0.0.1
+
+portainer_port: 9443 # Port HTTPS par défaut (ou 9000 pour HTTP)
+portainer_data_volume: /opt/portainer/data
+portainer_ssl: true # true pour activer SSL, false pour HTTP
+portainer_ssl_cert_src: "" # Chemin du certificat SSL (laisser vide pour auto-généré)
+portainer_ssl_key_src: "" # Chemin de la clé privée SSL (laisser vide pour auto-généré)
+portainer_admin_password: "ChangeMe123!" # Mot de passe admin initial (optionnel, requiert Portainer >=2.9)
+
+minio_port: 9001
+minio_data_dir: /opt/minio/data
+minio_access_key: "minioadmin" # Laisse vide pour auto-génération sécurisée
+minio_secret_key: "minioadmin" # Laisse vide pour auto-génération sécurisée
+minio_ssl: false
+minio_ssl_cert_src: "" # Chemin vers certificat SSL (optionnel)
+minio_ssl_key_src: "" # Chemin vers clé privée SSL (optionnel)
+
+nginx_port: 80
+nginx_ssl: false
+nginx_ssl_cert_src: "" # chemin vers le certificat si SSL
+nginx_ssl_key_src: "" # chemin vers la clé privée si SSL
+nginx_allowed_ips: # accès autorisés (optionnel, vide = accès tous)
+  - 0.0.0.0/0
+
+apache_port: 8080
+apache_ssl: false
+apache_ssl_cert_src: ""
+apache_ssl_key_src: ""
+apache_allowed_ips:
+  - 0.0.0.0/0
+
+ssh_port: 2222
+fail2ban_bantime: 3600
+fail2ban_maxretry: 5

@@ -1,0 +1,68 @@
+---
+- name: Ajouter le dépôt PostgreSQL officiel
+  apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    state: present
+    filename: "pgdg"
+    update_cache: yes
+
+- name: Ajouter la clé GPG de PostgreSQL
+  apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: Installer PostgreSQL
+  apt:
+    name: "postgresql-{{ postgresql_version }}"
+    state: present
+    update_cache: yes
+
+- name: S'assurer que PostgreSQL est lancé et activé
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Configurer le port d'écoute de PostgreSQL
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: "^#?port ="
+    line: "port = {{ postgresql_port }}"
+  notify: Redémarrer PostgreSQL
+
+- name: Activer l'écoute sur toutes les interfaces (optionnel)
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
+    regexp: "^#?listen_addresses ="
+    line: "listen_addresses = '*'"
+  notify: Redémarrer PostgreSQL
+
+- name: Autoriser les connexions depuis n'importe où (optionnel/démo)
+  lineinfile:
+    path: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
+    line: "host    all             all             0.0.0.0/0               md5"
+    insertafter: EOF
+  notify: Redémarrer PostgreSQL
+
+- name: Créer les utilisateurs et bases de données PostgreSQL
+  become_user: postgres
+  vars:
+    user_password: "{{ item.password | default('') }}"
+  block:
+    - name: Créer la base de données
+      postgresql_db:
+        name: "{{ item.db }}"
+        encoding: UTF-8
+        lc_collate: "fr_FR.UTF-8"
+        lc_ctype: "fr_FR.UTF-8"
+        state: present
+
+    - name: Créer l'utilisateur
+      postgresql_user:
+        name: "{{ item.name }}"
+        password: "{{ user_password }}"
+        db: "{{ item.db }}"
+        priv: "ALL"
+        state: present
+  loop: "{{ postgresql_users }}"
+  when: postgresql_users is defined

@@ -1,0 +1,35 @@
+---
+- name: Installer Java (prérequis Jenkins)
+  apt:
+    name: openjdk-21-jdk
+    state: present
+    update_cache: yes
+
+- name: Ajouter la clé GPG Jenkins
+  apt_key:
+    url: https://pkg.jenkins.io/debian/jenkins.io-2023.key
+    state: present
+
+- name: Ajouter le dépôt Jenkins
+  apt_repository:
+    repo: "deb https://pkg.jenkins.io/debian binary/"
+    state: present
+
+- name: Installer Jenkins
+  apt:
+    name: jenkins
+    state: present
+    update_cache: yes
+
+- name: Modifier le port d'écoute de Jenkins
+  lineinfile:
+    path: /etc/default/jenkins
+    regexp: "^HTTP_PORT="
+    line: "HTTP_PORT={{ jenkins_port }}"
+  notify: Redémarrer Jenkins
+
+- name: S'assurer que Jenkins est lancé et activé
+  service:
+    name: jenkins
+    state: started
+    enabled: yes

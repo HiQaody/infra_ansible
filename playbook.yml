@@ -1,0 +1,14 @@
+- name: Provision infrastructure server
+  hosts: servers
+  become: true
+  roles:
+    - docker
+    # - portainer
+    # - jenkins
+    - nginx
+    # - postgresql
+    # - pgadmin
+    # - grafana
+    # - prometheus
+    # - secure_server
+    - users

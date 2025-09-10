@@ -1,0 +1,10 @@
+---
+pgadmin_port: 5050
+pgadmin_webserver: "nginx"
+pgadmin_admin_email: "admin@exemple.com"
+pgadmin_admin_password: "changeMe!"
+pgadmin_ssl_enabled: true
+pgadmin_ssl_cert_src: ""
+pgadmin_ssl_key_src: ""
+pgadmin_allowed_ips:
+  - 127.0.0.1

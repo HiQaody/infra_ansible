@@ -1,0 +1,8 @@
+---
+minio_port: 9001
+minio_data_dir: /opt/minio/data
+minio_access_key: ""
+minio_secret_key: ""
+minio_ssl: false
+minio_ssl_cert_src: ""
+minio_ssl_key_src: ""

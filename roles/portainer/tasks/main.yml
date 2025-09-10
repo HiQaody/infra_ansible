@@ -1,0 +1,90 @@
+---
+- name: Créer le dossier de données persistant pour Portainer
+  file:
+    path: "{{ portainer_data_volume }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Installer Docker SDK for Python (si besoin)
+  pip:
+    name: docker
+  become: yes
+
+- name: Générer certificat SSL auto-signé si SSL activé et aucun certificat fourni
+  command: >
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout {{ portainer_data_volume }}/portainer.key
+    -out {{ portainer_data_volume }}/portainer.crt
+    -subj "/C=FR/ST=France/L=Paris/O=Portainer/OU=IT/CN=portainer.local"
+  args:
+    creates: "{{ portainer_data_volume }}/portainer.crt"
+  when: portainer_ssl|bool and (portainer_ssl_cert_src == "" or portainer_ssl_key_src == "")
+
+- name: Copier le certificat SSL fourni
+  copy:
+    src: "{{ portainer_ssl_cert_src }}"
+    dest: "{{ portainer_data_volume }}/portainer.crt"
+    owner: root
+    group: root
+    mode: 0600
+  when: portainer_ssl|bool and portainer_ssl_cert_src|length > 0
+
+- name: Copier la clé SSL fournie
+  copy:
+    src: "{{ portainer_ssl_key_src }}"
+    dest: "{{ portainer_data_volume }}/portainer.key"
+    owner: root
+    group: root
+    mode: 0600
+  when: portainer_ssl|bool and portainer_ssl_key_src|length > 0
+
+- name: Vérifier si Portainer est déjà déployé
+  docker_container_info:
+    name: portainer
+  register: portainer_info
+  ignore_errors: true
+
+- name: Arrêter et supprimer Portainer existant (si déjà déployé)
+  docker_container:
+    name: portainer
+    state: absent
+    force_kill: yes
+  when: portainer_info.container is defined
+
+- name: Déployer Portainer (SSL activé)
+  docker_container:
+    name: portainer
+    image: portainer/portainer-ce:latest
+    restart_policy: always
+    ports:
+      - "{{ portainer_port }}:9443"
+    volumes:
+      - "{{ portainer_data_volume }}:/data"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "{{ portainer_data_volume }}/portainer.crt:/certs/portainer.crt"
+      - "{{ portainer_data_volume }}/portainer.key:/certs/portainer.key"
+    command: >
+      --ssl
+      --sslcert /certs/portainer.crt
+      --sslkey /certs/portainer.key
+    env:
+      # Pour initialiser le mot de passe admin dès le premier run (Portainer >=2.9)
+      # Commenter ou supprimer si non souhaité
+      ADMIN_PASSWORD: "{{ portainer_admin_password | default('', true) }}"
+    when: portainer_ssl|bool
+
+- name: Déployer Portainer (HTTP classique)
+  docker_container:
+    name: portainer
+    image: portainer/portainer-ce:latest
+    restart_policy: always
+    ports:
+      - "{{ portainer_port }}:9000"
+    volumes:
+      - "{{ portainer_data_volume }}:/data"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    env:
+      ADMIN_PASSWORD: "{{ portainer_admin_password | default('', true) }}"
+    when: not portainer_ssl|bool

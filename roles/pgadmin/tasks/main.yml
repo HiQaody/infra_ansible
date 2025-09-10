@@ -1,0 +1,120 @@
+---
+- name: Installer les dépendances pgAdmin
+  apt:
+    name:
+      - ca-certificates
+      - curl
+      - wget
+      - python3-psycopg2
+      - python3-virtualenv
+      - openssl
+    state: present
+    update_cache: yes
+
+- name: Ajouter le dépôt pgAdmin
+  apt_repository:
+    repo: "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/{{ ansible_distribution_release }} pgadmin4 main"
+    state: present
+
+- name: Ajouter la clé GPG de pgAdmin
+  apt_key:
+    url: https://www.pgadmin.org/static/packages_pgadmin_org.pub
+    state: present
+
+- name: Installer pgAdmin4 en mode serveur
+  apt:
+    name: pgadmin4
+    state: present
+    update_cache: yes
+
+- name: Créer le dossier de config et données (si absent)
+  file:
+    path: "/var/lib/pgadmin"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: 0750
+
+- name: Générer le fichier de configuration pgAdmin
+  template:
+    src: config_local.py.j2
+    dest: /etc/pgadmin/config_local.py
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Initialiser pgAdmin (création admin sans interaction)
+  command: >
+    /usr/pgadmin4/bin/setup-web.sh
+  args:
+    creates: /var/lib/pgadmin/pgadmin4.db
+  environment:
+    PGADMIN_SETUP_EMAIL: "{{ pgadmin_admin_email }}"
+    PGADMIN_SETUP_PASSWORD: "{{ pgadmin_admin_password }}"
+
+- name: Installer Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Créer le dossier SSL pour Nginx
+  file:
+    path: /etc/nginx/ssl
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+  when: pgadmin_ssl_enabled
+
+- name: Copier le certificat SSL fourni
+  copy:
+    src: "{{ pgadmin_ssl_cert_src }}"
+    dest: /etc/nginx/ssl/pgadmin.crt
+    owner: root
+    group: root
+    mode: 0600
+  when: pgadmin_ssl_enabled and pgadmin_ssl_cert_src|length > 0
+
+- name: Copier la clé SSL fournie
+  copy:
+    src: "{{ pgadmin_ssl_key_src }}"
+    dest: /etc/nginx/ssl/pgadmin.key
+    owner: root
+    group: root
+    mode: 0600
+  when: pgadmin_ssl_enabled and pgadmin_ssl_key_src|length > 0
+
+- name: Générer un certificat auto-signé si aucun fourni
+  command: >
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048
+    -keyout /etc/nginx/ssl/pgadmin.key
+    -out /etc/nginx/ssl/pgadmin.crt
+    -subj "/C=FR/ST=France/L=Paris/O=pgAdmin/OU=IT/CN=pgadmin.local"
+  args:
+    creates: /etc/nginx/ssl/pgadmin.crt
+  when: pgadmin_ssl_enabled and (pgadmin_ssl_cert_src == "" or pgadmin_ssl_key_src == "")
+
+- name: Créer le fichier de configuration Nginx pour pgAdmin (SSL & sécurité)
+  template:
+    src: pgadmin_nginx_ssl.conf.j2
+    dest: /etc/nginx/sites-available/pgadmin
+  notify: Reload Nginx
+
+- name: Activer le site Nginx pgAdmin
+  file:
+    src: /etc/nginx/sites-available/pgadmin
+    dest: /etc/nginx/sites-enabled/pgadmin
+    state: link
+    force: yes
+
+- name: Désactiver le site par défaut Nginx
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: S'assurer que Nginx est démarré
+  service:
+    name: nginx
+    state: started
+    enabled: yes
