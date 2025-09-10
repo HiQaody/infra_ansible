@@ -2,7 +2,7 @@
 docker_users:
   - "chutambohobe"
 
-jenkins_port: 8081
+jenkins_port: 8181
 
 postgresql_port: 5433
 postgresql_version: 15
@@ -51,6 +51,6 @@ apache_ssl_key_src: ""
 apache_allowed_ips:
   - 0.0.0.0/0
 
-ssh_port: 2222
+ssh_port: 3038
 fail2ban_bantime: 3600
 fail2ban_maxretry: 5

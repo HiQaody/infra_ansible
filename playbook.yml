@@ -3,12 +3,12 @@
   become: true
   roles:
     - docker
-    # - portainer
-    # - jenkins
+    - portainer
+    - jenkins
     - nginx
-    # - postgresql
-    # - pgadmin
-    # - grafana
-    # - prometheus
+    - postgresql
+    - pgadmin
+    - grafana
+    - prometheus
     # - secure_server
     - users
