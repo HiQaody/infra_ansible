@@ -1,0 +1,54 @@
+---
+- name: Installer le serveur OpenSSH
+  apt:
+    name: openssh-server
+    state: present
+    update_cache: yes
+
+- name: S'assurer que le service SSH est lancé et activé
+  service:
+    name: ssh
+    state: started
+    enabled: yes
+
+- name: Configurer le port SSH personnalisé
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port\s+'
+    line: "Port {{ ssh_port }}"
+    state: present
+    backup: yes
+
+- name: Désactiver l'accès root en SSH
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PermitRootLogin'
+    line: 'PermitRootLogin no'
+    state: present
+    backup: yes
+
+- name: Désactiver l'authentification par mot de passe (optionnel, si clés déployées)
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    state: present
+    backup: yes
+  when: disable_ssh_password | default(false)
+
+- name: Désactiver la port SSH par défaut (22) dans UFW
+  ufw:
+    rule: deny
+    port: 22
+    proto: tcp
+
+- name: Autoriser le nouveau port SSH dans UFW
+  ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: Redémarrer le service SSH si la configuration a changé
+  service:
+    name: ssh
+    state: restarted

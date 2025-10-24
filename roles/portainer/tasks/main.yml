@@ -1,90 +1,79 @@
 ---
-- name: Créer le dossier de données persistant pour Portainer
+- name: Mettre à jour le système
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Créer le volume Docker pour Portainer
+  docker_volume:
+    name: "{{ portainer_data_volume }}"
+    state: present
+
+- name: Lancer le conteneur Portainer
+  docker_container:
+    name: "{{ portainer_container_name }}"
+    image: "{{ portainer_image }}"
+    restart_policy: "{{ portainer_restart_policy }}"
+    published_ports:
+      - "{{ portainer_api_port }}:{{ portainer_internal_api_port }}"
+      - "{{ portainer_web_port }}:{{ portainer_internal_web_port }}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "{{ portainer_data_volume }}:/data"
+    state: started
+
+- name: Installer Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Créer la configuration Nginx pour Portainer
+  copy:
+    dest: "{{ nginx_portainer_conf }}"
+    content: |
+      server {
+          server_name {{ portainer_domain }};
+
+          location / {
+              proxy_pass http://localhost:{{ portainer_web_port }};
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+
+              # Support des WebSockets
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection "Upgrade";
+          }
+      }
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Activer le site Nginx pour Portainer
   file:
-    path: "{{ portainer_data_volume }}"
-    state: directory
-    owner: root
-    group: root
-    mode: 0755
+    src: "{{ nginx_portainer_conf }}"
+    dest: "/etc/nginx/sites-enabled/portainer.itdcmada.mg"
+    state: link
 
-- name: Installer Docker SDK for Python (si besoin)
-  pip:
-    name: docker
-  become: yes
+- name: Vérifier la configuration Nginx
+  command: nginx -t
+  register: nginx_test
+  changed_when: false
 
-- name: Générer certificat SSL auto-signé si SSL activé et aucun certificat fourni
+- name: Redémarrer Nginx
+  service:
+    name: nginx
+    state: restarted
+
+# Pour la partie SSL, tu peux ajouter ce bloc si Certbot est installé :
+- name: Générer le certificat SSL avec Let's Encrypt (Certbot)
   command: >
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048
-    -keyout {{ portainer_data_volume }}/portainer.key
-    -out {{ portainer_data_volume }}/portainer.crt
-    -subj "/C=FR/ST=France/L=Paris/O=Portainer/OU=IT/CN=portainer.local"
+    certbot --nginx -d {{ portainer_domain }}
   args:
-    creates: "{{ portainer_data_volume }}/portainer.crt"
-  when: portainer_ssl|bool and (portainer_ssl_cert_src == "" or portainer_ssl_key_src == "")
+    creates: "/etc/letsencrypt/live/{{ portainer_domain }}/fullchain.pem"
+  when: portainer_domain is defined
 
-- name: Copier le certificat SSL fourni
-  copy:
-    src: "{{ portainer_ssl_cert_src }}"
-    dest: "{{ portainer_data_volume }}/portainer.crt"
-    owner: root
-    group: root
-    mode: 0600
-  when: portainer_ssl|bool and portainer_ssl_cert_src|length > 0
-
-- name: Copier la clé SSL fournie
-  copy:
-    src: "{{ portainer_ssl_key_src }}"
-    dest: "{{ portainer_data_volume }}/portainer.key"
-    owner: root
-    group: root
-    mode: 0600
-  when: portainer_ssl|bool and portainer_ssl_key_src|length > 0
-
-- name: Vérifier si Portainer est déjà déployé
-  docker_container_info:
-    name: portainer
-  register: portainer_info
-  ignore_errors: true
-
-- name: Arrêter et supprimer Portainer existant (si déjà déployé)
-  docker_container:
-    name: portainer
-    state: absent
-    force_kill: yes
-  when: portainer_info.container is defined
-
-- name: Déployer Portainer (SSL activé)
-  docker_container:
-    name: portainer
-    image: portainer/portainer-ce:latest
-    restart_policy: always
-    ports:
-      - "{{ portainer_port }}:9443"
-    volumes:
-      - "{{ portainer_data_volume }}:/data"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "{{ portainer_data_volume }}/portainer.crt:/certs/portainer.crt"
-      - "{{ portainer_data_volume }}/portainer.key:/certs/portainer.key"
-    command: >
-      --ssl
-      --sslcert /certs/portainer.crt
-      --sslkey /certs/portainer.key
-    env:
-      # Pour initialiser le mot de passe admin dès le premier run (Portainer >=2.9)
-      # Commenter ou supprimer si non souhaité
-      ADMIN_PASSWORD: "{{ portainer_admin_password | default('', true) }}"
-    when: portainer_ssl|bool
-
-- name: Déployer Portainer (HTTP classique)
-  docker_container:
-    name: portainer
-    image: portainer/portainer-ce:latest
-    restart_policy: always
-    ports:
-      - "{{ portainer_port }}:9000"
-    volumes:
-      - "{{ portainer_data_volume }}:/data"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-    env:
-      ADMIN_PASSWORD: "{{ portainer_admin_password | default('', true) }}"
-    when: not portainer_ssl|bool
+- name: Afficher accès Portainer
+  debug:
+    msg: "Accède à Portainer sur : https://{{ portainer_domain }}"

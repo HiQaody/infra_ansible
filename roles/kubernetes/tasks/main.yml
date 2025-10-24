@@ -1,0 +1,43 @@
+---
+- name: Mettre à jour le système
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Installer Docker
+  apt:
+    name: "{{ docker_package }}"
+    state: present
+
+- name: Récupérer la dernière version stable de kubectl
+  set_fact:
+    kubectl_version: "{{ lookup('url', 'https://dl.k8s.io/release/stable.txt') | trim }}"
+
+- name: Télécharger kubectl
+  get_url:
+    url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
+    dest: /tmp/kubectl
+    mode: '0755'
+
+- name: Installer kubectl
+  copy:
+    src: /tmp/kubectl
+    dest: "{{ kubectl_bin_path }}"
+    remote_src: yes
+    mode: '0755'
+
+- name: Vérifier l'installation de Docker
+  command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Vérifier l'installation de kubectl
+  command: "{{ kubectl_bin_path }} version --client"
+  register: kubectl_version_output
+  changed_when: false
+
+- name: Afficher les versions installées
+  debug:
+    msg:
+      - "Docker version : {{ docker_version.stdout }}"
+      - "kubectl version : {{ kubectl_version_output.stdout }}"

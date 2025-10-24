@@ -1,8 +1,0 @@
----
----
-portainer_port: 9443
-portainer_data_volume: /opt/portainer/data
-portainer_ssl: false
-portainer_ssl_cert_src: ""
-portainer_ssl_key_src: ""
-portainer_admin_password: ""

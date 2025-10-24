@@ -1,56 +1,104 @@
 ---
+ssh_port: 2222  # Exemple, à adapter
+disable_ssh_password: true  # Optionnel pour n'accepter que la connexion par clé
+
+
 docker_users:
   - "chutambohobe"
 
-jenkins_port: 8081
+jenkins_port: 8080
+jenkins_java_packages:
+  - fontconfig
+  - openjdk-21-jre
+jenkins_gpg_key_url: "https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key"
+jenkins_gpg_key_path: "/usr/share/keyrings/jenkins-keyring.asc"
+jenkins_repo: "deb [signed-by={{ jenkins_gpg_key_path }}] https://pkg.jenkins.io/debian-stable binary/"
+jenkins_list_path: "/etc/apt/sources.list.d/jenkins.list"
+jenkins_service_name: "jenkins"
 
-postgresql_port: 5433
-postgresql_version: 15
-postgresql_users:
-  - name: myuser
-    password: mypassword
-    db: mydb
 
+minio_bin_url: "https://dl.min.io/server/minio/release/linux-amd64/minio"
+minio_bin_path: "/usr/local/bin/minio"
+minio_user: "minio-user"
+minio_group: "minio-user"
+minio_storage_dir: "/data/minio"
+minio_env_file: "/etc/default/minio"
+minio_access_key: "minioadmin"
+minio_secret_key: "mot_passe_minio"
+minio_service_file: "/etc/systemd/system/minio.service"
+minio_console_port: 9001
+minio_domain: "minio.itdcmada.mg"
+nginx_minio_conf: "/etc/nginx/sites-available/minio.itdcmada.mg"
+
+
+
+postgresql_packages:
+  - postgresql
+  - postgresql-contrib
+postgresql_service_name: postgresql
+postgresql_version: "14"
+postgresql_conf_dir: "/etc/postgresql/14/main"
+postgresql_conf_file: "/etc/postgresql/14/main/postgresql.conf"
+pg_hba_conf_file: "/etc/postgresql/14/main/pg_hba.conf"
+postgresql_listen_addresses: "*"
+postgresql_password: "password_postgres"
+
+
+docker_packages:
+  - docker.io
+  - docker-compose
+docker_service_name: docker
+docker_group: docker
+docker_user: "{{ ansible_user }}"
+
+
+pgadmin_network: pgnetwork
+pgadmin_container_name: pgadmin
+pgadmin_image: dpage/pgadmin4
+pgadmin_restart_policy: always
 pgadmin_port: 5050
-pgadmin_webserver: nginx
-pgadmin_admin_email: "admin@exemple.com"
-pgadmin_admin_password: "MonSuperMotDePasse"
-pgadmin_ssl_enabled: true
-pgadmin_ssl_cert_src: ""
-pgadmin_ssl_key_src: ""
-pgadmin_allowed_ips:
-  - 192.168.0.0/24
-  - 127.0.0.1
+pgadmin_email: email_pgadmin@itdcmada.mg
+pgadmin_password: mot_passe_pgadmin
+pgadmin_data_volume: pgadmin_data
+pgadmin_domain: pgadmin.itdcmada.mg
+nginx_pgadmin_conf: "/etc/nginx/sites-available/pgadmin.itdcmada.mg"
 
-portainer_port: 9443 # Port HTTPS par défaut (ou 9000 pour HTTP)
-portainer_data_volume: /opt/portainer/data
-portainer_ssl: true # true pour activer SSL, false pour HTTP
-portainer_ssl_cert_src: "" # Chemin du certificat SSL (laisser vide pour auto-généré)
-portainer_ssl_key_src: "" # Chemin de la clé privée SSL (laisser vide pour auto-généré)
-portainer_admin_password: "ChangeMe123!" # Mot de passe admin initial (optionnel, requiert Portainer >=2.9)
 
-minio_port: 9001
-minio_data_dir: /opt/minio/data
-minio_access_key: "minioadmin" # Laisse vide pour auto-génération sécurisée
-minio_secret_key: "minioadmin" # Laisse vide pour auto-génération sécurisée
-minio_ssl: false
-minio_ssl_cert_src: "" # Chemin vers certificat SSL (optionnel)
-minio_ssl_key_src: "" # Chemin vers clé privée SSL (optionnel)
+portainer_data_volume: portainer_data
+portainer_container_name: portainer
+portainer_image: portainer/portainer-ce:latest
+portainer_restart_policy: always
+portainer_api_port: 8888
+portainer_web_port: 6860
+portainer_internal_api_port: 8000
+portainer_internal_web_port: 9443
+portainer_domain: portainer.itdcmada.mg
+nginx_portainer_conf: "/etc/nginx/sites-available/portainer.itdcmada.mg"
 
-nginx_port: 80
-nginx_ssl: false
-nginx_ssl_cert_src: "" # chemin vers le certificat si SSL
-nginx_ssl_key_src: "" # chemin vers la clé privée si SSL
-nginx_allowed_ips: # accès autorisés (optionnel, vide = accès tous)
-  - 0.0.0.0/0
 
-apache_port: 8080
-apache_ssl: false
-apache_ssl_cert_src: ""
-apache_ssl_key_src: ""
-apache_allowed_ips:
-  - 0.0.0.0/0
+kubernetes_kubectl_url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
+kubectl_version: "{{ lookup('url', 'https://dl.k8s.io/release/stable.txt') | trim }}"
+kubectl_bin_path: "/usr/local/bin/kubectl"
+docker_package: docker.io
 
-ssh_port: 2222
-fail2ban_bantime: 3600
-fail2ban_maxretry: 5
+
+harbor_namespace: harbor
+harbor_helm_repo: https://helm.goharbor.io
+harbor_release_name: harbor
+harbor_values_file: /tmp/harbor-values.yaml
+harbor_nodeport: 30012
+harbor_admin_password: "Emitpn@harbor"
+harbor_domain: harbor.tsirylab.com
+harbor_nginx_conf: "/etc/nginx/sites-available/harbor.tsirylab.com"
+harbor_nginx_cert_dir: "/etc/letsencrypt/live/harbor.tsirylab.com"
+harbor_nginx_http_port: 80
+harbor_nginx_https_port: 443
+jenkins_harbor_credential_id: harbor-user
+jenkins_harbor_admin_user: admin
+jenkins_harbor_admin_email: hiqaody@gmail.com
+
+users_create:
+  - name: chutambohobe
+    password: "{{ 'Chu!Tamboh0be' | password_hash('sha512') }}"
+    groups: "sudo"
+    shell: /bin/bash

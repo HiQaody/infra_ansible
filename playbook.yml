@@ -1,14 +1,35 @@
+---
 - name: Provision infrastructure server
   hosts: servers
   become: true
+  vars_files:
+    - group_vars/all.yml
+
+  pre_tasks:
+    - name: Mise à jour du cache APT
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Upgrade du système (optionnel)
+      ansible.builtin.apt:
+        upgrade: dist
+      when: upgrade_system | default(false)
+
   roles:
-    - docker
-    # - portainer
-    # - jenkins
-    - nginx
-    # - postgresql
-    # - pgadmin
-    # - grafana
-    # - prometheus
-    # - secure_server
-    - users
+    - role: users        # Toujours gérer les utilisateurs en premier pour la sécurité
+    - role: ssh_server
+    - role: docker       # Docker doit être prêt avant les rôles dépendants de containers
+    - role: nginx        # Nginx peut servir de proxy pour les services installés ensuite
+    # - role: portainer  # Interface de gestion Docker, doit être après Docker
+    # - role: jenkins    # CI/CD, peut dépendre de Docker/Nginx
+    # - role: postgresql # Base de données, souvent avant pgAdmin
+    # - role: pgadmin    # Interface web pour PostgreSQL, dépend du DB et du réseau Docker
+    # - role: grafana    # Monitoring, dépend de DB ou Prometheus
+    # - role: prometheus # Monitoring, exporter metrics avant Grafana
+    - role: secure_server # Sécurisation générale (firewall, fail2ban, etc.)
+
+  post_tasks:
+    - name: Afficher fin de provisioning
+      ansible.builtin.debug:
+        msg: "Provisioning terminé sur les serveurs ciblés."

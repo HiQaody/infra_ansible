@@ -1,99 +1,123 @@
 ---
-- name: Créer le dossier de données MinIO
+- name: Mettre à jour le système
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Télécharger la dernière version de MinIO
+  get_url:
+    url: "{{ minio_bin_url }}"
+    dest: /tmp/minio
+    mode: '0755'
+
+- name: Installer MinIO binaire
+  copy:
+    src: /tmp/minio
+    dest: "{{ minio_bin_path }}"
+    remote_src: yes
+    mode: '0755'
+
+- name: Créer l'utilisateur MinIO
+  user:
+    name: "{{ minio_user }}"
+    system: yes
+    shell: /sbin/nologin
+    state: present
+
+- name: Créer le dossier de stockage MinIO
   file:
-    path: "{{ minio_data_dir }}"
+    path: "{{ minio_storage_dir }}"
     state: directory
+    owner: "{{ minio_user }}"
+    group: "{{ minio_group }}"
+    mode: '0755'
+
+- name: Créer le fichier de configuration MinIO
+  copy:
+    dest: "{{ minio_env_file }}"
+    content: |
+      MINIO_ACCESS_KEY={{ minio_access_key }}
+      MINIO_SECRET_KEY={{ minio_secret_key }}
     owner: root
     group: root
-    mode: 0755
+    mode: '0644'
 
-- name: Générer un access_key aléatoire si non fourni
-  set_fact:
-    minio_access_key: "{{ lookup('password', '/dev/null length=20 chars=ascii_letters') }}"
-  when: minio_access_key|length == 0
+- name: Créer le service systemd pour MinIO
+  copy:
+    dest: "{{ minio_service_file }}"
+    content: |
+      [Unit]
+      Description=MinIO
+      Documentation=https://docs.min.io
+      Wants=network-online.target
+      After=network-online.target
 
-- name: Générer un secret_key aléatoire si non fourni
-  set_fact:
-    minio_secret_key: "{{ lookup('password', '/dev/null length=40 chars=ascii_letters,digits') }}"
-  when: minio_secret_key|length == 0
+      [Service]
+      User={{ minio_user }}
+      Group={{ minio_group }}
+      ExecStart={{ minio_bin_path }} server {{ minio_storage_dir }} --console-address ":{{ minio_console_port }}"
+      EnvironmentFile={{ minio_env_file }}
+      Restart=always
+      LimitNOFILE=65536
 
-- name: Générer certificat SSL auto-signé si activé et non fourni
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Recharger systemd
+  command: systemctl daemon-reload
+
+- name: Démarrer et activer MinIO
+  service:
+    name: minio
+    state: started
+    enabled: yes
+
+- name: Créer la configuration Nginx pour MinIO
+  copy:
+    dest: "{{ nginx_minio_conf }}"
+    content: |
+      server {
+          server_name {{ minio_domain }};
+          location / {
+              proxy_pass http://localhost:{{ minio_console_port }};
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Activer le site Nginx pour MinIO
+  file:
+    src: "{{ nginx_minio_conf }}"
+    dest: "/etc/nginx/sites-enabled/minio.itdcmada.mg"
+    state: link
+
+- name: Vérifier la configuration Nginx
+  command: nginx -t
+  register: nginx_test
+  changed_when: false
+
+- name: Redémarrer Nginx
+  service:
+    name: nginx
+    state: restarted
+
+# Pour la partie SSL, tu peux ajouter ce bloc si Certbot est installé :
+- name: Générer le certificat SSL avec Let's Encrypt (Certbot)
   command: >
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048
-    -keyout {{ minio_data_dir }}/minio.key
-    -out {{ minio_data_dir }}/minio.crt
-    -subj "/C=FR/ST=France/L=Paris/O=MinIO/OU=IT/CN=minio.local"
+    certbot --nginx -d {{ minio_domain }}
   args:
-    creates: "{{ minio_data_dir }}/minio.crt"
-  when: minio_ssl|bool and (minio_ssl_cert_src == "" or minio_ssl_key_src == "")
+    creates: "/etc/letsencrypt/live/{{ minio_domain }}/fullchain.pem"
+  when: minio_domain is defined
 
-- name: Copier le certificat SSL fourni
-  copy:
-    src: "{{ minio_ssl_cert_src }}"
-    dest: "{{ minio_data_dir }}/minio.crt"
-    owner: root
-    group: root
-    mode: 0600
-  when: minio_ssl|bool and minio_ssl_cert_src|length > 0
-
-- name: Copier la clé SSL fournie
-  copy:
-    src: "{{ minio_ssl_key_src }}"
-    dest: "{{ minio_data_dir }}/minio.key"
-    owner: root
-    group: root
-    mode: 0600
-  when: minio_ssl|bool and minio_ssl_key_src|length > 0
-
-- name: Vérifier si MinIO est déjà déployé
-  docker_container_info:
-    name: minio
-  register: minio_info
-  ignore_errors: true
-
-- name: Arrêter et supprimer MinIO existant (si déjà déployé)
-  docker_container:
-    name: minio
-    state: absent
-    force_kill: yes
-  when: minio_info.container is defined
-
-- name: Lancer MinIO (SSL activé)
-  docker_container:
-    name: minio
-    image: minio/minio:latest
-    restart_policy: always
-    ports:
-      - "{{ minio_port }}:9000"
-    volumes:
-      - "{{ minio_data_dir }}:/data"
-      - "{{ minio_data_dir }}/minio.crt:/root/.minio/certs/public.crt"
-      - "{{ minio_data_dir }}/minio.key:/root/.minio/certs/private.key"
-    env:
-      MINIO_ROOT_USER: "{{ minio_access_key }}"
-      MINIO_ROOT_PASSWORD: "{{ minio_secret_key }}"
-    command: server /data --console-address ":{{ minio_port }}"
-  when: minio_ssl|bool
-
-- name: Lancer MinIO (HTTP classique)
-  docker_container:
-    name: minio
-    image: minio/minio:latest
-    restart_policy: always
-    ports:
-      - "{{ minio_port }}:9000"
-    volumes:
-      - "{{ minio_data_dir }}:/data"
-    env:
-      MINIO_ROOT_USER: "{{ minio_access_key }}"
-      MINIO_ROOT_PASSWORD: "{{ minio_secret_key }}"
-    command: server /data --console-address ":{{ minio_port }}"
-  when: not minio_ssl|bool
-
-- name: Afficher les accès MinIO
+# Pour info/affichage :
+- name: Afficher accès MinIO
   debug:
-    msg: |
-      MinIO est prêt !
-      URL: http://{{ ansible_default_ipv4.address }}:{{ minio_port }}
-      Accès : {{ minio_access_key }}
-      Secret: {{ minio_secret_key }}
+    msg: "Accède à MinIO sur : https://{{ minio_domain }} avec {{ minio_access_key }} / {{ minio_secret_key }}"

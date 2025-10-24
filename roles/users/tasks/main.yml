@@ -2,12 +2,28 @@
 - name: "Créer les utilisateurs"
   ansible.builtin.user:
     name: "{{ item.name }}"
-    password: "{{ item.password }}"
+    password: "{{ item.password | default(omit) }}"
     shell: "{{ item.shell | default('/bin/bash') }}"
     groups: "{{ item.groups | default(omit) }}"
     append: yes
     create_home: yes
+    state: present
   loop: "{{ users_create }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - item.name is defined
+    - item.name | length > 0
+
+- name: "Vérifier que le mot de passe est hashé (SHA512)"
+  assert:
+    that:
+      - item.password is not regex('^[^$]+$')
+    fail_msg: "Le mot de passe de l'utilisateur {{ item.name }} doit être hashé (format SHA512)."
+  loop: "{{ users_create }}"
+  when:
+    - item.password is defined
+    - item.password | length > 0
 
 - name: "Autoriser sudo sans mot de passe (optionnel)"
   ansible.builtin.copy:
@@ -16,5 +32,7 @@
     owner: root
     group: root
     mode: '0440'
-  when: item.sudo | default(false)
   loop: "{{ users_create }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.sudo | default(false, true)

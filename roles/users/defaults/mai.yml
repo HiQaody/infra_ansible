@@ -1,7 +1,0 @@
----
-users_create:
-  - name: chutambohobe
-    password: "{{ 'Chu!Tamboh0be'}}"
-    groups: "sudo"
-    shell: /bin/bash
-    sudo: true

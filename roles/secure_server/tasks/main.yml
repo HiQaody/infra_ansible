@@ -1,105 +1,99 @@
 ---
-- name: Mettre à jour le système
+- name: Installer fail2ban et ufw
   apt:
+    name:
+      - fail2ban
+      - ufw
+    state: present
     update_cache: yes
-    upgrade: dist
-    autoremove: yes
 
-- name: Installer unattended-upgrades
-  apt:
-    name: unattended-upgrades
-    state: present
-
-- name: Configurer unattended-upgrades
-  dpkg_reconfigure:
-    package: unattended-upgrades
-    priority: low
-
-- name: Sécuriser SSH - Désactiver root
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^PermitRootLogin'
-    line: 'PermitRootLogin no'
-
-- name: Sécuriser SSH - Changer le port
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^Port'
-    line: 'Port {{ ssh_port }}'
-
-- name: Sécuriser SSH - Désactiver mot de passe
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^PasswordAuthentication'
-    line: 'PasswordAuthentication no'
-
-- name: Sécuriser SSH - Désactiver ChallengeResponseAuthentication
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^ChallengeResponseAuthentication'
-    line: 'ChallengeResponseAuthentication no'
-
-- name: Sécuriser SSH - Désactiver UsePAM
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^UsePAM'
-    line: 'UsePAM no'
-
-- name: Redémarrer SSH
-  service:
-    name: ssh
-    state: restarted
-
-- name: Installer fail2ban
-  apt:
-    name: fail2ban
-    state: present
-
-- name: Copier la config Fail2Ban
-  template:
-    src: jail.local.j2
-    dest: /etc/fail2ban/jail.local
-  notify: restart fail2ban
-
-- name: S'assurer que Fail2Ban est actif
+- name: Activer le service fail2ban
   service:
     name: fail2ban
     state: started
     enabled: yes
 
-- name: Installer et configurer UFW
-  apt:
-    name: ufw
-    state: present
+- name: Déployer une configuration fail2ban personnalisée (jail.local)
+  copy:
+    dest: /etc/fail2ban/jail.local
+    content: |
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 5
+      bantime = 3600
+      findtime = 600
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart fail2ban
 
-- name: Configurer UFW - règles SSH
+- name: Assurer le redémarrage de fail2ban si config changée
+  meta: flush_handlers
+
+- name: Configurer la politique par défaut UFW (deny incoming, allow outgoing)
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: Autoriser les connexions SSH
   ufw:
     rule: allow
-    port: "{{ ssh_port }}"
+    name: OpenSSH
+
+- name: Autoriser le port Jenkins
+  ufw:
+    rule: allow
+    port: "{{ jenkins_port }}"
     proto: tcp
 
-- name: Configurer UFW - HTTP
+- name: Autoriser le port Minio Console
+  ufw:
+    rule: allow
+    port: "{{ minio_console_port }}"
+    proto: tcp
+
+- name: Autoriser le port PostgreSQL
+  ufw:
+    rule: allow
+    port: 5432
+    proto: tcp
+
+- name: Autoriser le port pgAdmin
+  ufw:
+    rule: allow
+    port: "{{ pgadmin_port }}"
+    proto: tcp
+
+- name: Autoriser le port Portainer
+  ufw:
+    rule: allow
+    port: "{{ portainer_web_port }}"
+    proto: tcp
+
+- name: Autoriser le port 80 (HTTP)
   ufw:
     rule: allow
     port: 80
     proto: tcp
 
-- name: Configurer UFW - HTTPS
+- name: Autoriser le port 443 (HTTPS)
   ufw:
     rule: allow
     port: 443
     proto: tcp
 
-- name: Définir la politique par défaut - entrées
+- name: Autoriser le port Harbor NodePort
   ufw:
-    direction: incoming
-    policy: deny
+    rule: allow
+    port: "{{ harbor_nodeport }}"
+    proto: tcp
 
-- name: Définir la politique par défaut - sorties
-  ufw:
-    direction: outgoing
-    policy: allow
-
-- name: Activer UFW
-  ufw:
-    state: enabled
+- name: Redémarrer fail2ban si nécessaire
+  service:
+    name: fail2ban
+    state: restarted
+  when: false # handler utilisé

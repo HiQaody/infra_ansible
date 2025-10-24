@@ -1,120 +1,77 @@
 ---
-- name: Installer les dépendances pgAdmin
+- name: Installer Docker si besoin
   apt:
-    name:
-      - ca-certificates
-      - curl
-      - wget
-      - python3-psycopg2
-      - python3-virtualenv
-      - openssl
-    state: present
-    update_cache: yes
-
-- name: Ajouter le dépôt pgAdmin
-  apt_repository:
-    repo: "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/{{ ansible_distribution_release }} pgadmin4 main"
+    name: docker.io
     state: present
 
-- name: Ajouter la clé GPG de pgAdmin
-  apt_key:
-    url: https://www.pgadmin.org/static/packages_pgadmin_org.pub
+- name: Créer le réseau Docker pour PostgreSQL et pgAdmin
+  docker_network:
+    name: "{{ pgadmin_network }}"
     state: present
 
-- name: Installer pgAdmin4 en mode serveur
-  apt:
-    name: pgadmin4
-    state: present
-    update_cache: yes
-
-- name: Créer le dossier de config et données (si absent)
-  file:
-    path: "/var/lib/pgadmin"
-    state: directory
-    owner: www-data
-    group: www-data
-    mode: 0750
-
-- name: Générer le fichier de configuration pgAdmin
-  template:
-    src: config_local.py.j2
-    dest: /etc/pgadmin/config_local.py
-    owner: root
-    group: root
-    mode: 0644
-
-- name: Initialiser pgAdmin (création admin sans interaction)
-  command: >
-    /usr/pgadmin4/bin/setup-web.sh
-  args:
-    creates: /var/lib/pgadmin/pgadmin4.db
-  environment:
-    PGADMIN_SETUP_EMAIL: "{{ pgadmin_admin_email }}"
-    PGADMIN_SETUP_PASSWORD: "{{ pgadmin_admin_password }}"
+- name: Déployer le conteneur pgAdmin
+  docker_container:
+    name: "{{ pgadmin_container_name }}"
+    image: "{{ pgadmin_image }}"
+    restart_policy: "{{ pgadmin_restart_policy }}"
+    networks:
+      - name: "{{ pgadmin_network }}"
+    published_ports:
+      - "{{ pgadmin_port }}:80"
+    env:
+      PGADMIN_DEFAULT_EMAIL: "{{ pgadmin_email }}"
+      PGADMIN_DEFAULT_PASSWORD: "{{ pgadmin_password }}"
+    volumes:
+      - "{{ pgadmin_data_volume }}:/var/lib/pgadmin"
+    state: started
 
 - name: Installer Nginx
   apt:
     name: nginx
     state: present
-    update_cache: yes
 
-- name: Créer le dossier SSL pour Nginx
-  file:
-    path: /etc/nginx/ssl
-    state: directory
-    owner: root
-    group: root
-    mode: 0700
-  when: pgadmin_ssl_enabled
-
-- name: Copier le certificat SSL fourni
+- name: Créer la configuration Nginx pour pgAdmin
   copy:
-    src: "{{ pgadmin_ssl_cert_src }}"
-    dest: /etc/nginx/ssl/pgadmin.crt
+    dest: "{{ nginx_pgadmin_conf }}"
+    content: |
+      server {
+          server_name {{ pgadmin_domain }};
+          location / {
+              proxy_pass http://localhost:{{ pgadmin_port }};
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
     owner: root
     group: root
-    mode: 0600
-  when: pgadmin_ssl_enabled and pgadmin_ssl_cert_src|length > 0
+    mode: '0644'
 
-- name: Copier la clé SSL fournie
-  copy:
-    src: "{{ pgadmin_ssl_key_src }}"
-    dest: /etc/nginx/ssl/pgadmin.key
-    owner: root
-    group: root
-    mode: 0600
-  when: pgadmin_ssl_enabled and pgadmin_ssl_key_src|length > 0
-
-- name: Générer un certificat auto-signé si aucun fourni
-  command: >
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048
-    -keyout /etc/nginx/ssl/pgadmin.key
-    -out /etc/nginx/ssl/pgadmin.crt
-    -subj "/C=FR/ST=France/L=Paris/O=pgAdmin/OU=IT/CN=pgadmin.local"
-  args:
-    creates: /etc/nginx/ssl/pgadmin.crt
-  when: pgadmin_ssl_enabled and (pgadmin_ssl_cert_src == "" or pgadmin_ssl_key_src == "")
-
-- name: Créer le fichier de configuration Nginx pour pgAdmin (SSL & sécurité)
-  template:
-    src: pgadmin_nginx_ssl.conf.j2
-    dest: /etc/nginx/sites-available/pgadmin
-  notify: Reload Nginx
-
-- name: Activer le site Nginx pgAdmin
+- name: Activer le site Nginx pour pgAdmin
   file:
-    src: /etc/nginx/sites-available/pgadmin
-    dest: /etc/nginx/sites-enabled/pgadmin
+    src: "{{ nginx_pgadmin_conf }}"
+    dest: "/etc/nginx/sites-enabled/pgadmin.itdcmada.mg"
     state: link
-    force: yes
 
-- name: Désactiver le site par défaut Nginx
-  file:
-    path: /etc/nginx/sites-enabled/default
-    state: absent
+- name: Vérifier la configuration Nginx
+  command: nginx -t
+  register: nginx_test
+  changed_when: false
 
-- name: S'assurer que Nginx est démarré
+- name: Redémarrer Nginx
   service:
     name: nginx
-    state: started
-    enabled: yes
+    state: restarted
+
+# Pour la partie SSL, tu peux ajouter ce bloc si Certbot est installé :
+- name: Générer le certificat SSL avec Let's Encrypt (Certbot)
+  command: >
+    certbot --nginx -d {{ pgadmin_domain }}
+  args:
+    creates: "/etc/letsencrypt/live/{{ pgadmin_domain }}/fullchain.pem"
+  when: pgadmin_domain is defined
+
+- name: Afficher accès pgAdmin
+  debug:
+    msg: "Accède à pgAdmin sur : https://{{ pgadmin_domain }} avec {{ pgadmin_email }} / {{ pgadmin_password }}"

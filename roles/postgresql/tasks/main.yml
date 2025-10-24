@@ -1,68 +1,47 @@
 ---
-- name: Ajouter le dépôt PostgreSQL officiel
-  apt_repository:
-    repo: "deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
-    state: present
-    filename: "pgdg"
-    update_cache: yes
-
-- name: Ajouter la clé GPG de PostgreSQL
-  apt_key:
-    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
-    state: present
-
-- name: Installer PostgreSQL
+- name: Mettre à jour le système
   apt:
-    name: "postgresql-{{ postgresql_version }}"
-    state: present
     update_cache: yes
+    upgrade: dist
 
-- name: S'assurer que PostgreSQL est lancé et activé
+- name: Installer PostgreSQL et les paquets complémentaires
+  apt:
+    name: "{{ postgresql_packages }}"
+    state: present
+
+- name: Vérifier la version de PostgreSQL
+  command: psql --version
+  register: psql_version
+  changed_when: false
+
+- name: Démarrer et activer le service PostgreSQL
   service:
-    name: postgresql
+    name: "{{ postgresql_service_name }}"
     state: started
     enabled: yes
 
-- name: Configurer le port d'écoute de PostgreSQL
-  lineinfile:
-    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
-    regexp: "^#?port ="
-    line: "port = {{ postgresql_port }}"
-  notify: Redémarrer PostgreSQL
-
-- name: Activer l'écoute sur toutes les interfaces (optionnel)
-  lineinfile:
-    path: "/etc/postgresql/{{ postgresql_version }}/main/postgresql.conf"
-    regexp: "^#?listen_addresses ="
-    line: "listen_addresses = '*'"
-  notify: Redémarrer PostgreSQL
-
-- name: Autoriser les connexions depuis n'importe où (optionnel/démo)
-  lineinfile:
-    path: "/etc/postgresql/{{ postgresql_version }}/main/pg_hba.conf"
-    line: "host    all             all             0.0.0.0/0               md5"
-    insertafter: EOF
-  notify: Redémarrer PostgreSQL
-
-- name: Créer les utilisateurs et bases de données PostgreSQL
+- name: Changer le mot de passe de l'utilisateur 'postgres'
   become_user: postgres
-  vars:
-    user_password: "{{ item.password | default('') }}"
-  block:
-    - name: Créer la base de données
-      postgresql_db:
-        name: "{{ item.db }}"
-        encoding: UTF-8
-        lc_collate: "fr_FR.UTF-8"
-        lc_ctype: "fr_FR.UTF-8"
-        state: present
+  shell: |
+    psql -c "ALTER USER postgres PASSWORD '{{ postgresql_password }}';"
+  args:
+    executable: /bin/bash
 
-    - name: Créer l'utilisateur
-      postgresql_user:
-        name: "{{ item.name }}"
-        password: "{{ user_password }}"
-        db: "{{ item.db }}"
-        priv: "ALL"
-        state: present
-  loop: "{{ postgresql_users }}"
-  when: postgresql_users is defined
+- name: Autoriser l'écoute sur toutes les adresses (listen_addresses)
+  lineinfile:
+    path: "{{ postgresql_conf_file }}"
+    regexp: '^#?listen_addresses\s*='
+    line: "listen_addresses = '{{ postgresql_listen_addresses }}'"
+    state: present
+
+- name: Autoriser l'accès distant via pg_hba.conf
+  lineinfile:
+    path: "{{ pg_hba_conf_file }}"
+    insertafter: EOF
+    line: "host    all             all             0.0.0.0/0               md5"
+    state: present
+
+- name: Redémarrer PostgreSQL
+  service:
+    name: "{{ postgresql_service_name }}"
+    state: restarted

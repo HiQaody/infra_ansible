@@ -14,4 +14,11 @@
 - name: Activer NGINX
   service:
     name: nginx
-    enabled: yes  
+    enabled: yes
+
+- name: Installer Certbot
+  become: yes
+  apt:
+    name: certbot python3-certbot-nginx
+    state: present
+    update_cache: yes

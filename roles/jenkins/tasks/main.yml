@@ -1,25 +1,39 @@
 ---
+- name: Mettre à jour le système
+  apt:
+    update_cache: yes
+    upgrade: dist
+
 - name: Installer Java (prérequis Jenkins)
   apt:
-    name: openjdk-21-jdk
+    name: "{{ jenkins_java_packages }}"
     state: present
+
+- name: Vérification de la version de Java
+  command: java -version
+  register: java_version
+  changed_when: false
+
+- name: Télécharger la clé GPG Jenkins dans /usr/share/keyrings
+  get_url:
+    url: "{{ jenkins_gpg_key_url }}"
+    dest: "{{ jenkins_gpg_key_path }}"
+    mode: '0644'
+
+- name: Ajouter le dépôt Jenkins (stable) avec signed-by
+  copy:
+    dest: "{{ jenkins_list_path }}"
+    content: "{{ jenkins_repo }}\n"
+    mode: '0644'
+
+- name: Mettre à jour la liste des paquets
+  apt:
     update_cache: yes
-
-- name: Ajouter la clé GPG Jenkins
-  apt_key:
-    url: https://pkg.jenkins.io/debian/jenkins.io-2023.key
-    state: present
-
-- name: Ajouter le dépôt Jenkins
-  apt_repository:
-    repo: "deb https://pkg.jenkins.io/debian binary/"
-    state: present
 
 - name: Installer Jenkins
   apt:
-    name: jenkins
+    name: "{{ jenkins_service_name }}"
     state: present
-    update_cache: yes
 
 - name: Modifier le port d'écoute de Jenkins
   lineinfile:
@@ -30,6 +44,15 @@
 
 - name: S'assurer que Jenkins est lancé et activé
   service:
-    name: jenkins
+    name: "{{ jenkins_service_name }}"
     state: started
     enabled: yes
+
+- name: Afficher le mot de passe initial d’admin Jenkins
+  command: cat /var/lib/jenkins/secrets/initialAdminPassword
+  register: jenkins_initial_password
+  changed_when: false
+
+- name: Afficher le mot de passe initial Jenkins
+  debug:
+    msg: "Mot de passe initial Jenkins : {{ jenkins_initial_password.stdout }}"
