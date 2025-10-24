@@ -33,3 +33,4 @@
     - name: Afficher fin de provisioning
       ansible.builtin.debug:
         msg: "Provisioning terminé sur les serveurs ciblés."
+

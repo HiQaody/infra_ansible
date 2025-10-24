@@ -1,0 +1,45 @@
+- name: Installer le pare-feu UFW
+  apt:
+    name: ufw
+    state: present
+    update_cache: yes
+
+- name: Définir la politique par défaut (entrant : deny)
+  ufw:
+    direction: incoming
+    policy: deny
+
+- name: Définir la politique par défaut (sortant : allow)
+  ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Autoriser SSH
+  ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: Autoriser HTTP
+  ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+
+- name: Autoriser HTTPS
+  ufw:
+    rule: allow
+    port: 443
+    proto: tcp
+
+- name: Activer UFW
+  ufw:
+    state: enabled
+
+- name: Afficher le statut UFW
+  command: ufw status verbose
+  register: ufw_status
+
+- name: Afficher les règles UFW
+  debug:
+    msg: "{{ ufw_status.stdout }}"
