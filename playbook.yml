@@ -20,7 +20,7 @@
     #- role: users        # Toujours gérer les utilisateurs en premier pour la sécurité
     #- role: ssh_server
     #- role: docker       # Docker doit être prêt avant les rôles dépendants de containers
-    - role: nginx        # Nginx peut servir de proxy pour les services installés ensuite
+    #- role: nginx        # Nginx peut servir de proxy pour les services installés ensuite
     # - role: portainer  # Interface de gestion Docker, doit être après Docker
     # - role: jenkins    # CI/CD, peut dépendre de Docker/Nginx
     # - role: postgresql # Base de données, souvent avant pgAdmin
@@ -28,7 +28,8 @@
     # - role: grafana    # Monitoring, dépend de DB ou Prometheus
     # - role: prometheus # Monitoring, exporter metrics avant Grafana
     #- role: secure_server # Sécurisation générale (firewall, fail2ban, etc.)
-    - role: kubernetes
+    #- role: kubernetes
+    - role: harbor       # Registry de containers, dépend de Kubernetes
 
   post_tasks:
     - name: Afficher fin de provisioning

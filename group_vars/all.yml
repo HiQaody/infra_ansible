@@ -71,20 +71,12 @@ nginx_portainer_conf: "/etc/nginx/sites-available/portainer.itdcmada.mg"
 k3s_bin_path: /usr/local/bin/k3s
 k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
 
-harbor_namespace: harbor
-harbor_helm_repo: https://helm.goharbor.io
-harbor_release_name: harbor
-harbor_values_file: /tmp/harbor-values.yaml
-harbor_nodeport: 30012
-harbor_admin_password: "Emitpn@harbor"
-harbor_domain: harbor.tsirylab.com
-harbor_nginx_conf: "/etc/nginx/sites-available/harbor.tsirylab.com"
-harbor_nginx_cert_dir: "/etc/letsencrypt/live/harbor.tsirylab.com"
-harbor_nginx_http_port: 80
-harbor_nginx_https_port: 443
-jenkins_harbor_credential_id: harbor-user
-jenkins_harbor_admin_user: admin
-jenkins_harbor_admin_email: hiqaody@gmail.com
+harbor_helm_repo: "https://helm.goharbor.io"
+harbor_namespace: "harbor"
+harbor_release_name: "harbor"
+harbor_values_file: "/tmp/harbor-values.yaml"
+harbor_nodeport: 30001
+harbor_admin_password: "HarBorAmdin123!"
 
 users_create:
   - name: ilafitany

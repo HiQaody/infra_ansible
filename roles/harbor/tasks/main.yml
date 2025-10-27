@@ -1,19 +1,34 @@
 ---
+- name: Installer Helm (Linux AMD64)
+  become: yes
+  shell: |
+    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Vérifier l'installation de Helm
+  command: helm version
+  register: helm_version
+  changed_when: false
+
 - name: Ajouter le repo Helm Harbor
   shell: helm repo add harbor {{ harbor_helm_repo }} && helm repo update
   args:
     executable: /bin/bash
+  register: harbor_repo
+  changed_when: "'harbor' in harbor_repo.stdout or 'has been added' in harbor_repo.stdout"
 
-- name: Créer le namespace Harbor
-  shell: kubectl create namespace {{ harbor_namespace }}
-  args:
-    executable: /bin/bash
-  register: ns_result
-  failed_when: "'already exists' not in ns_result.stderr and ns_result.rc != 0"
+- name: Créer le namespace Harbor (idempotent)
+  kubernetes.core.k8s:
+    state: present
+    api_version: v1
+    kind: Namespace
+    name: "{{ harbor_namespace }}"
 
 - name: Générer le fichier de valeurs pour Harbor
   copy:
     dest: "{{ harbor_values_file }}"
+    mode: "0640"
     content: |
       expose:
         type: nodePort
@@ -37,102 +52,12 @@
           redis: { size: 1Gi }
           trivy: { size: 5Gi }
 
-- name: Installer Harbor via Helm
+- name: Installer ou mettre à jour Harbor via Helm (idempotent)
   shell: |
-    helm install {{ harbor_release_name }} harbor/harbor -n {{ harbor_namespace }} -f {{ harbor_values_file }}
+    helm upgrade --install {{ harbor_release_name }} harbor/harbor \
+      -n {{ harbor_namespace }} -f {{ harbor_values_file }}
   args:
     executable: /bin/bash
   register: harbor_install
-  failed_when: "'already exists' not in harbor_install.stderr and harbor_install.rc != 0"
-
-- name: Installer Nginx (reverse proxy)
-  apt:
-    name: nginx
-    state: present
-
-- name: Créer la configuration Nginx pour Harbor
-  copy:
-    dest: "{{ harbor_nginx_conf }}"
-    content: |
-      server {
-          listen {{ harbor_nginx_https_port }} ssl;
-          server_name {{ harbor_domain }};
-
-          ssl_certificate {{ harbor_nginx_cert_dir }}/fullchain.pem;
-          ssl_certificate_key {{ harbor_nginx_cert_dir }}/privkey.pem;
-          include /etc/letsencrypt/options-ssl-nginx.conf;
-          ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-          client_max_body_size 2G;
-
-          location / {
-              proxy_pass http://localhost:{{ harbor_nodeport }};
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-              proxy_set_header X-Forwarded-Host $host;
-              proxy_set_header Upgrade $http_upgrade;
-              proxy_set_header Connection $http_connection;
-              proxy_connect_timeout 900;
-              proxy_send_timeout 900;
-              proxy_read_timeout 900;
-              send_timeout 900;
-              proxy_request_buffering off;
-              proxy_buffering off;
-          }
-      }
-
-      server {
-          listen {{ harbor_nginx_http_port }};
-          server_name {{ harbor_domain }};
-          return 301 https://$host$request_uri;
-      }
-    owner: root
-    group: root
-    mode: '0644'
-
-- name: Activer le site Nginx pour Harbor
-  file:
-    src: "{{ harbor_nginx_conf }}"
-    dest: "/etc/nginx/sites-enabled/harbor.tsirylab.com"
-    state: link
-
-- name: Vérifier la configuration Nginx
-  command: nginx -t
-  register: nginx_test
-  changed_when: false
-
-- name: Redémarrer Nginx
-  service:
-    name: nginx
-    state: restarted
-
-# Pour la partie SSL, à exécuter si Certbot est installé :
-- name: Générer le certificat SSL avec Let's Encrypt (Certbot)
-  command: >
-    certbot --nginx -d {{ harbor_domain }}
-  args:
-    creates: "{{ harbor_nginx_cert_dir }}/fullchain.pem"
-  when: harbor_domain is defined
-
-# Bonus : création du secret pour Kubernetes (si besoin)
-- name: Créer le secret docker-registry pour Harbor dans Kubernetes
-  shell: |
-    kubectl create secret docker-registry harbor-registry-secret \
-      --docker-server={{ harbor_domain }} \
-      --docker-username={{ jenkins_harbor_admin_user }} \
-      --docker-password={{ harbor_admin_password }} \
-      --docker-email={{ jenkins_harbor_admin_email }} \
-      -n pnud-agvm
-  args:
-    executable: /bin/bash
-  ignore_errors: true
-
-- name: Afficher accès Harbor
-  debug:
-    msg:
-      - "Accès UI Harbor : https://{{ harbor_domain }}"
-      - "Identifiant admin : {{ jenkins_harbor_admin_user }} / {{ harbor_admin_password }}"
-      - "NodePort : {{ harbor_nodeport }}"
-      - "Pour Jenkins : créer un credential avec ID '{{ jenkins_harbor_credential_id }}'"
+  changed_when: "'deployed' in harbor_install.stdout or 'upgraded' in harbor_install.stdout"
+  failed_when: harbor_install.rc != 0 and 'already exists' not in (harbor_install.stderr | default(''))
