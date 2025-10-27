@@ -2,7 +2,7 @@
   apt:
     name: nginx
     state: present
-    
+
 - name: Vérifier la config NGINX
   command: nginx -t
 
@@ -16,9 +16,11 @@
     name: nginx
     enabled: yes
 
-- name: Installer Certbot
+- name: Installer Certbot et plugin NGINX
   become: yes
   apt:
-    name: certbot python3-certbot-nginx
+    name:
+      - certbot
+      - python3-certbot-nginx
     state: present
     update_cache: yes

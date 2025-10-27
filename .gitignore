@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-=======
+
 .venv
 __pycache__
 
@@ -7,5 +6,4 @@ __pycache__
 
 .env
 
->>>>>>> 7769254d2f262d33acdf02e5df1627893c16d74a
 inventory.ini

@@ -31,7 +31,7 @@
     content: "{{ item.name }} ALL=(ALL) NOPASSWD:ALL"
     owner: root
     group: root
-    mode: '0440'
+    mode: "0440"
   loop: "{{ users_create }}"
   loop_control:
     label: "{{ item.name }}"

@@ -1,0 +1,8 @@
+- name: Recharger la configuration de Nginx
+  service:
+    name: nginx
+    state: reloaded
+- name: Redémarrer NGINX
+  service:
+    name: nginx
+    state: restarted

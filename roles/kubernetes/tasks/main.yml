@@ -1,29 +1,47 @@
-- name: Installer K3s
+- name: Installer les dépendances nécessaires
+  apt:
+    name: curl
+    state: present
+    update_cache: yes
+
+- name: Installer K3s sans Traefik (ni Rancher)
   shell: |
-    curl -sfL https://get.k3s.io | sh -
+    curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--disable traefik" sh -
+  args:
+    creates: "{{ k3s_bin_path }}"
   register: k3s_install
   changed_when: "'already installed' not in (k3s_install.stdout | default(''))"
 
 - name: Vérifier que le fichier kubeconfig existe
   stat:
-    path: /etc/rancher/k3s/k3s.yaml
+    path: "{{ k3s_kubeconfig }}"
   register: k3s_config
 
-- name: Modifier les permissions du fichier kubeconfig
+- name: Modifier les permissions du kubeconfig
   file:
-    path: /etc/rancher/k3s/k3s.yaml
-    mode: '0644'
+    path: "{{ k3s_kubeconfig }}"
+    mode: "0644"
     owner: root
     group: root
   when: k3s_config.stat.exists
 
+- name: Créer un lien symbolique pour kubectl (optionnel)
+  file:
+    src: "{{ k3s_bin_path }}"
+    dest: /usr/local/bin/kubectl
+    state: link
+
 - name: Vérifier que K3s est opérationnel
-  command: kubectl get nodes
+  command: k3s kubectl get nodes -o wide
   register: k3s_status
   changed_when: false
   environment:
-    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    KUBECONFIG: "{{ k3s_kubeconfig }}"
 
 - name: Afficher le statut des nodes
   debug:
     var: k3s_status.stdout
+
+- name: Afficher la commande d'utilisation de kubectl
+  debug:
+    msg: "Pour utiliser kubectl en local : export KUBECONFIG={{ k3s_kubeconfig }}"

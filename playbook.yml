@@ -19,8 +19,8 @@
   roles:
     #- role: users        # Toujours gérer les utilisateurs en premier pour la sécurité
     #- role: ssh_server
-   # - role: docker       # Docker doit être prêt avant les rôles dépendants de containers
-    #- role: nginx        # Nginx peut servir de proxy pour les services installés ensuite
+    #- role: docker       # Docker doit être prêt avant les rôles dépendants de containers
+    - role: nginx        # Nginx peut servir de proxy pour les services installés ensuite
     # - role: portainer  # Interface de gestion Docker, doit être après Docker
     # - role: jenkins    # CI/CD, peut dépendre de Docker/Nginx
     # - role: postgresql # Base de données, souvent avant pgAdmin

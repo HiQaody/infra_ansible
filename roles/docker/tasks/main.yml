@@ -1,25 +1,41 @@
 ---
-- name: Installer Docker et Docker Compose
+- name: Installer Docker
   apt:
-    name: "{{ docker_packages }}"
+    name: docker.io
+    state: present
+    update_cache: yes
+
+- name: Vérifier si docker-compose-plugin est disponible
+  shell: "apt-cache show docker-compose-plugin"
+  register: compose_plugin_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Installer Docker Compose (plugin v2 si dispo, sinon v1)
+  apt:
+    name: "{{ 'docker-compose-plugin' if compose_plugin_check.rc == 0 else 'docker-compose' }}"
     state: present
 
 - name: Démarrer et activer le service Docker
   service:
-    name: "{{ docker_service_name }}"
+    name: docker
     state: started
     enabled: yes
 
-- name: Ajouter l'utilisateur au groupe docker
+- name: Ajouter l'utilisateur principal au groupe docker
   user:
     name: "{{ docker_user }}"
-    groups: "{{ docker_group }}"
+    groups: docker
     append: yes
 
-- name: Appliquer le nouveau groupe (newgrp docker)
-  shell: newgrp docker
-  args:
-    executable: /bin/bash
-  when: docker_user == ansible_user
-  register: newgrp_result
-  changed_when: false
+- name: Ajouter les autres utilisateurs au groupe docker
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  loop: "{{ docker_users }}"
+  when: docker_users is defined and docker_users | length > 0
+
+- name: Afficher un message pour la reconnexion au groupe docker
+  debug:
+    msg: "Les utilisateurs {{ ([docker_user] + (docker_users | default([]))) | join(', ') }} doivent se déconnecter/reconnecter pour utiliser Docker sans sudo."

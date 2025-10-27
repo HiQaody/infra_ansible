@@ -1,10 +1,5 @@
 ---
-ssh_port: 2222  # Exemple, à adapter
-disable_ssh_password: true  # Optionnel pour n'accepter que la connexion par clé
-
-
-docker_users:
-  - "chutambohobe"
+ssh_port: 3127
 
 jenkins_port: 8080
 jenkins_java_packages:
@@ -15,7 +10,6 @@ jenkins_gpg_key_path: "/usr/share/keyrings/jenkins-keyring.asc"
 jenkins_repo: "deb [signed-by={{ jenkins_gpg_key_path }}] https://pkg.jenkins.io/debian-stable binary/"
 jenkins_list_path: "/etc/apt/sources.list.d/jenkins.list"
 jenkins_service_name: "jenkins"
-
 
 minio_bin_url: "https://dl.min.io/server/minio/release/linux-amd64/minio"
 minio_bin_path: "/usr/local/bin/minio"
@@ -30,8 +24,6 @@ minio_console_port: 9001
 minio_domain: "minio.itdcmada.mg"
 nginx_minio_conf: "/etc/nginx/sites-available/minio.itdcmada.mg"
 
-
-
 postgresql_packages:
   - postgresql
   - postgresql-contrib
@@ -43,14 +35,16 @@ pg_hba_conf_file: "/etc/postgresql/14/main/pg_hba.conf"
 postgresql_listen_addresses: "*"
 postgresql_password: "password_postgres"
 
-
 docker_packages:
   - docker.io
-  - docker-compose
+  - docker-compose-plugin # ou docker-compose pour les vieux systèmes
+
 docker_service_name: docker
 docker_group: docker
-docker_user: "{{ ansible_user }}"
 
+docker_user: "{{ ansible_user }}" # Utilisateur qui lance ansible
+docker_users:
+  - "ilafitany" # Liste d'autres utilisateurs à ajouter au groupe
 
 pgadmin_network: pgnetwork
 pgadmin_container_name: pgadmin
@@ -63,7 +57,6 @@ pgadmin_data_volume: pgadmin_data
 pgadmin_domain: pgadmin.itdcmada.mg
 nginx_pgadmin_conf: "/etc/nginx/sites-available/pgadmin.itdcmada.mg"
 
-
 portainer_data_volume: portainer_data
 portainer_container_name: portainer
 portainer_image: portainer/portainer-ce:latest
@@ -75,12 +68,8 @@ portainer_internal_web_port: 9443
 portainer_domain: portainer.itdcmada.mg
 nginx_portainer_conf: "/etc/nginx/sites-available/portainer.itdcmada.mg"
 
-
-kubernetes_kubectl_url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
-kubectl_version: "{{ lookup('url', 'https://dl.k8s.io/release/stable.txt') | trim }}"
-kubectl_bin_path: "/usr/local/bin/kubectl"
-docker_package: docker.io
-
+k3s_bin_path: /usr/local/bin/k3s
+k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
 
 harbor_namespace: harbor
 harbor_helm_repo: https://helm.goharbor.io
@@ -98,7 +87,7 @@ jenkins_harbor_admin_user: admin
 jenkins_harbor_admin_email: hiqaody@gmail.com
 
 users_create:
-  - name: chutambohobe
-    password: "{{ 'Chu!Tamboh0be' | password_hash('sha512') }}"
+  - name: ilafitany
+    password: "{{ 'IlafTn!261' | password_hash('sha512') }}"
     groups: "sudo"
     shell: /bin/bash
