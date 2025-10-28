@@ -27,14 +27,6 @@
     state: present
     backup: yes
 
-- name: Désactiver l'authentification par mot de passe (optionnel, si clés déployées)
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^PasswordAuthentication'
-    line: 'PasswordAuthentication no'
-    state: present
-    backup: yes
-  when: disable_ssh_password | default(false)
 
 - name: Désactiver la port SSH par défaut (22) dans UFW
   ufw:

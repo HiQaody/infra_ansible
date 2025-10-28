@@ -21,41 +21,41 @@ minio_access_key: "minioadmin"
 minio_secret_key: "mot_passe_minio"
 minio_service_file: "/etc/systemd/system/minio.service"
 minio_console_port: 9001
-minio_domain: "minio.itdcmada.mg"
-nginx_minio_conf: "/etc/nginx/sites-available/minio.itdcmada.mg"
+minio_domain: "minio.tsirylab.com"
+nginx_minio_conf: "/etc/nginx/sites-available/minio.tsirylab.com"
 
 postgresql_packages:
   - postgresql
   - postgresql-contrib
 postgresql_service_name: postgresql
-postgresql_version: "14"
-postgresql_conf_dir: "/etc/postgresql/14/main"
-postgresql_conf_file: "/etc/postgresql/14/main/postgresql.conf"
-pg_hba_conf_file: "/etc/postgresql/14/main/pg_hba.conf"
+postgresql_version: "18"
+postgresql_conf_dir: "/etc/postgresql/18/main"
+postgresql_conf_file: "/etc/postgresql/18/main/postgresql.conf"
+pg_hba_conf_file: "/etc/postgresql/18/main/pg_hba.conf"
 postgresql_listen_addresses: "*"
-postgresql_password: "password_postgres"
+postgresql_password: "Base!AgVm!261"
 
 docker_packages:
   - docker.io
-  - docker-compose-plugin # ou docker-compose pour les vieux systèmes
+  - docker-compose-plugin
 
 docker_service_name: docker
 docker_group: docker
 
-docker_user: "{{ ansible_user }}" # Utilisateur qui lance ansible
+docker_user: "{{ ansible_user }}"
 docker_users:
-  - "ilafitany" # Liste d'autres utilisateurs à ajouter au groupe
+  - "agvmdigital"
 
 pgadmin_network: pgnetwork
 pgadmin_container_name: pgadmin
 pgadmin_image: dpage/pgadmin4
 pgadmin_restart_policy: always
 pgadmin_port: 5050
-pgadmin_email: email_pgadmin@itdcmada.mg
-pgadmin_password: mot_passe_pgadmin
+pgadmin_email: technicien@tsirylab.com
+pgadmin_password: "PgAgVM!261"
 pgadmin_data_volume: pgadmin_data
-pgadmin_domain: pgadmin.itdcmada.mg
-nginx_pgadmin_conf: "/etc/nginx/sites-available/pgadmin.itdcmada.mg"
+pgadmin_domain: pgadmin.tsirylab.com
+nginx_pgadmin_conf: "/etc/nginx/sites-available/pgadmin.tsirylab.com"
 
 portainer_data_volume: portainer_data
 portainer_container_name: portainer
@@ -65,8 +65,8 @@ portainer_api_port: 8888
 portainer_web_port: 6860
 portainer_internal_api_port: 8000
 portainer_internal_web_port: 9443
-portainer_domain: portainer.itdcmada.mg
-nginx_portainer_conf: "/etc/nginx/sites-available/portainer.itdcmada.mg"
+portainer_domain: portainer.tsirylab.com
+nginx_portainer_conf: "/etc/nginx/sites-available/portainer.tsirylab.com"
 
 k3s_bin_path: /usr/local/bin/k3s
 k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
@@ -79,7 +79,7 @@ harbor_nodeport: 30001
 harbor_admin_password: "HarBorAmdin123!"
 
 users_create:
-  - name: ilafitany
-    password: "{{ 'IlafTn!261' | password_hash('sha512') }}"
+  - name: agvmdigital
+    password: "{{ 'AgVm@Vp!s' | password_hash('sha512') }}"
     groups: "sudo"
     shell: /bin/bash
