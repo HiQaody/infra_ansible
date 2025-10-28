@@ -1,4 +1,19 @@
 ---
+- name: Installer les dépendances Python pour Kubernetes
+  become: yes
+  pip:
+    name:
+      - kubernetes
+      - openshift
+      - pyyaml
+    state: present
+    executable: pip
+
+- name: Vérifier l'installation des bibliothèques Kubernetes
+  command: python3 -c "import kubernetes; print('OK')"
+  register: kubernetes_check
+  changed_when: false
+
 - name: Installer Helm (Linux AMD64)
   become: yes
   shell: |
@@ -18,6 +33,11 @@
   register: harbor_repo
   changed_when: "'harbor' in harbor_repo.stdout or 'has been added' in harbor_repo.stdout"
 
+- name: Verifier la version python
+  command: python3 --version
+  register: python_version
+  changed_when: false
+
 - name: Créer le namespace Harbor (idempotent)
   kubernetes.core.k8s:
     state: present
@@ -25,32 +45,11 @@
     kind: Namespace
     name: "{{ harbor_namespace }}"
 
-- name: Générer le fichier de valeurs pour Harbor
-  copy:
+- name: Générer le fichier de valeurs pour Harbor (template)
+  template:
+    src: harbor-values.yaml.j2
     dest: "{{ harbor_values_file }}"
     mode: "0640"
-    content: |
-      expose:
-        type: nodePort
-        tls:
-          enabled: false
-        nodePort:
-          name: harbor
-          ports:
-            http:
-              port: {{ harbor_nodeport }}
-            https:
-              port: 32443
-      harborAdminPassword: "{{ harbor_admin_password }}"
-      persistence:
-        enabled: true
-        persistentVolumeClaim:
-          registry: { size: 5Gi }
-          chartmuseum: { size: 5Gi }
-          jobservice: { size: 1Gi }
-          database: { size: 1Gi }
-          redis: { size: 1Gi }
-          trivy: { size: 5Gi }
 
 - name: Installer ou mettre à jour Harbor via Helm (idempotent)
   shell: |
@@ -61,3 +60,15 @@
   register: harbor_install
   changed_when: "'deployed' in harbor_install.stdout or 'upgraded' in harbor_install.stdout"
   failed_when: harbor_install.rc != 0 and 'already exists' not in (harbor_install.stderr | default(''))
+
+- name: Vérifier le déploiement de Harbor
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ harbor_namespace }}"
+    label_selectors:
+      - "app={{ harbor_namespace_labels.app | default('harbor') }}"
+  register: harbor_pods
+
+- name: Afficher l'état des pods Harbor
+  debug:
+    var: harbor_pods.resources | map(attribute='status.phase') | list

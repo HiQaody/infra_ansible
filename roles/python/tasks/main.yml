@@ -1,0 +1,28 @@
+- name: Installer Python 3, pip et venv
+  apt:
+    name:
+      - python3
+      - python3-pip
+      - python3-venv
+      - python3-setuptools
+      - python3-wheel
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Créer un virtualenv pour Kubernetes Python libs
+  command: python3 -m venv /opt/k8s-venv
+  args:
+    creates: /opt/k8s-venv/bin/activate
+  become: yes
+
+- name: Installer les dépendances Python pour Kubernetes dans le venv
+  pip:
+    name:
+      - kubernetes
+      - openshift
+      - pyyaml
+    virtualenv: /opt/k8s-venv
+    virtualenv_python: python3
+    state: present
+  become: yes

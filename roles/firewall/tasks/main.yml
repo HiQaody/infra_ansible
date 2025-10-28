@@ -1,15 +1,16 @@
+---
 - name: Installer le pare-feu UFW
   apt:
     name: ufw
     state: present
     update_cache: yes
 
-- name: Définir la politique par défaut (entrant : deny)
+- name: Définir la politique par défaut (entrant   deny)
   ufw:
     direction: incoming
     policy: deny
 
-- name: Définir la politique par défaut (sortant : allow)
+- name: Définir la politique par défaut (sortant allow)
   ufw:
     direction: outgoing
     policy: allow
