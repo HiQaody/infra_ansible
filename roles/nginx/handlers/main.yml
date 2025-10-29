@@ -1,8 +1,13 @@
-- name: Recharger la configuration de Nginx
-  service:
-    name: nginx
-    state: reloaded
-- name: Redémarrer NGINX
+---
+- name: Restart nginx
   service:
     name: nginx
     state: restarted
+
+- name: Reload nginx
+  service:
+    name: nginx
+    state: reloaded
+
+- name: Test nginx configuration
+  command: nginx -t

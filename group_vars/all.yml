@@ -1,7 +1,7 @@
 ---
 ssh_port: 3127
 
-jenkins_port: 8080
+jenkins_port: 5151
 jenkins_java_packages:
   - fontconfig
   - openjdk-21-jre
@@ -83,3 +83,14 @@ users_create:
     password: "{{ 'AgVm@Vp!s' | password_hash('sha512') }}"
     groups: "sudo"
     shell: /bin/bash
+
+proxy_apps:
+  - domain: jenkins
+    port: 8080
+    websocket: true
+  #- domain: harbor
+  #  port: 30002
+  #  client_max_body_size: 2G
+  #- domain: gateway-dev
+  #  port: 5020
+  #  websocket: true

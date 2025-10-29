@@ -1,0 +1,29 @@
+---
+- name: Générer les configurations NGINX pour chaque app
+  template:
+    src: "template/proxy_app.conf.j2"
+    dest: "/etc/nginx/sites-available/{{ item.domain }}.agvm.tsirylab.com"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ proxy_apps }}"
+  notify: Reload nginx
+
+- name: Activer les sites
+  file:
+    src: "/etc/nginx/sites-available/{{ item.domain }}.agvm.tsirylab.com"
+    dest: "/etc/nginx/sites-enabled/{{ item.domain }}.agvm.tsirylab.com"
+    state: link
+  loop: "{{ proxy_apps }}"
+  notify: Reload nginx
+
+- name: Test nginx config
+  command: nginx -t
+  register: nginx_test
+  failed_when: nginx_test.rc != 0
+  notify: Reload nginx
+
+- name: Générer les certificats SSL avec certbot
+  command: certbot --nginx -d {{ item.domain }}.agvm.tsirylab.com --non-interactive --agree-tos --email admin@tsirylab.com --redirect
+  loop: "{{ proxy_apps }}"
+  ignore_errors: yes
