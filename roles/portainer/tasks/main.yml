@@ -1,79 +1,57 @@
 ---
-- name: Mettre à jour le système
-  apt:
-    update_cache: yes
-    upgrade: dist
+- name: Vérifier si Helm est déjà installé
+  ansible.builtin.stat:
+    path: /usr/local/bin/helm
+  register: helm_bin
 
-- name: Créer le volume Docker pour Portainer
-  docker_volume:
-    name: "{{ portainer_data_volume }}"
+- name: Installer Helm (si absent)
+  ansible.builtin.shell: |
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  when: not helm_bin.stat.exists
+  become: true
+- name: "Portainer | Add Helm repository"
+  kubernetes.core.helm_repository:
+    name: portainer
+    repo_url: https://portainer.github.io/k8s/
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+
+- name: "Portainer | Create namespace"
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ portainer_namespace }}"
     state: present
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
 
-- name: Lancer le conteneur Portainer
-  docker_container:
-    name: "{{ portainer_container_name }}"
-    image: "{{ portainer_image }}"
-    restart_policy: "{{ portainer_restart_policy }}"
-    published_ports:
-      - "{{ portainer_api_port }}:{{ portainer_internal_api_port }}"
-      - "{{ portainer_web_port }}:{{ portainer_internal_web_port }}"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - "{{ portainer_data_volume }}:/data"
-    state: started
+- name: "Portainer | Install via Helm"
+  kubernetes.core.helm:
+    name: "{{ portainer_release_name }}"
+    chart_ref: portainer/portainer
+    chart_version: "{{ portainer_chart_version }}"
+    release_namespace: "{{ portainer_namespace }}"
+    create_namespace: true
+    values:
+      service:
+        type: NodePort
+        nodePort: "{{ portainer_nodeport }}"
+      persistence:
+        enabled: true
+        size: "{{ portainer_storage_size }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
 
-- name: Installer Nginx
-  apt:
-    name: nginx
-    state: present
-
-- name: Créer la configuration Nginx pour Portainer
-  copy:
-    dest: "{{ nginx_portainer_conf }}"
-    content: |
-      server {
-          server_name {{ portainer_domain }};
-
-          location / {
-              proxy_pass http://localhost:{{ portainer_web_port }};
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
-
-              # Support des WebSockets
-              proxy_set_header Upgrade $http_upgrade;
-              proxy_set_header Connection "Upgrade";
-          }
-      }
-    owner: root
-    group: root
-    mode: '0644'
-
-- name: Activer le site Nginx pour Portainer
-  file:
-    src: "{{ nginx_portainer_conf }}"
-    dest: "/etc/nginx/sites-enabled/portainer.itdcmada.mg"
-    state: link
-
-- name: Vérifier la configuration Nginx
-  command: nginx -t
-  register: nginx_test
-  changed_when: false
-
-- name: Redémarrer Nginx
-  service:
-    name: nginx
-    state: restarted
-
-# Pour la partie SSL, tu peux ajouter ce bloc si Certbot est installé :
-- name: Générer le certificat SSL avec Let's Encrypt (Certbot)
-  command: >
-    certbot --nginx -d {{ portainer_domain }}
-  args:
-    creates: "/etc/letsencrypt/live/{{ portainer_domain }}/fullchain.pem"
-  when: portainer_domain is defined
-
-- name: Afficher accès Portainer
-  debug:
-    msg: "Accède à Portainer sur : https://{{ portainer_domain }}"
+- name: "Portainer | Wait for deployment"
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "{{ portainer_release_name }}"
+    namespace: "{{ portainer_namespace }}"
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_sleep: 5
+    wait_timeout: 180
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"

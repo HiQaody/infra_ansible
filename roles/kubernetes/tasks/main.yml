@@ -45,3 +45,11 @@
 - name: Afficher la commande d'utilisation de kubectl
   debug:
     msg: "Pour utiliser kubectl en local : export KUBECONFIG={{ k3s_kubeconfig }}"
+
+
+- name: Installer Helm (Kubernetes package manager)
+  ansible.builtin.shell: |
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+  become: true

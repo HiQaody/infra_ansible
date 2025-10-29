@@ -1,7 +1,7 @@
 ---
 ssh_port: 3127
 
-jenkins_port: 5151
+jenkins_port: 8080
 jenkins_java_packages:
   - fontconfig
   - openjdk-21-jre
@@ -57,16 +57,11 @@ pgadmin_data_volume: pgadmin_data
 pgadmin_domain: pgadmin.tsirylab.com
 nginx_pgadmin_conf: "/etc/nginx/sites-available/pgadmin.tsirylab.com"
 
-portainer_data_volume: portainer_data
-portainer_container_name: portainer
-portainer_image: portainer/portainer-ce:latest
-portainer_restart_policy: always
-portainer_api_port: 8888
-portainer_web_port: 6860
-portainer_internal_api_port: 8000
-portainer_internal_web_port: 9443
-portainer_domain: portainer.tsirylab.com
-nginx_portainer_conf: "/etc/nginx/sites-available/portainer.tsirylab.com"
+portainer_namespace: portainer
+portainer_release_name: portainer
+portainer_chart_version: 1.0.47
+portainer_nodeport: 30777
+portainer_storage_size: 10Gi
 
 k3s_bin_path: /usr/local/bin/k3s
 k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
@@ -87,6 +82,9 @@ users_create:
 proxy_apps:
   - domain: jenkins
     port: 8080
+    websocket: true
+  - domain: portainer
+    port: 30777
     websocket: true
   #- domain: harbor
   #  port: 30002
