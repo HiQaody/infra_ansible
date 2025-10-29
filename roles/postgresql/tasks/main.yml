@@ -1,4 +1,6 @@
 ---
+# Tâches pour installer et configurer PostgreSQL
+
 - name: Mettre à jour le système
   apt:
     update_cache: yes
@@ -21,13 +23,13 @@
     enabled: yes
 
 - name: Changer le mot de passe de l'utilisateur 'postgres'
-  become_user: postgres
-  shell: |
-    psql -c "ALTER USER postgres PASSWORD '{{ postgresql_password }}';"
+  become: yes
+  command: su - postgres -c "psql -c \"ALTER USER postgres PASSWORD '{{ postgresql_password }}';\""
   args:
     executable: /bin/bash
 
 - name: Autoriser l'écoute sur toutes les adresses (listen_addresses)
+  become: yes
   lineinfile:
     path: "{{ postgresql_conf_file }}"
     regexp: '^#?listen_addresses\s*='
@@ -35,6 +37,7 @@
     state: present
 
 - name: Autoriser l'accès distant via pg_hba.conf
+  become: yes
   lineinfile:
     path: "{{ pg_hba_conf_file }}"
     insertafter: EOF
@@ -42,6 +45,7 @@
     state: present
 
 - name: Redémarrer PostgreSQL
+  become: yes
   service:
     name: "{{ postgresql_service_name }}"
     state: restarted

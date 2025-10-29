@@ -18,20 +18,18 @@ minio_group: "minio-user"
 minio_storage_dir: "/data/minio"
 minio_env_file: "/etc/default/minio"
 minio_access_key: "minioadmin"
-minio_secret_key: "mot_passe_minio"
+minio_secret_key: "MinIO@gVm261"
 minio_service_file: "/etc/systemd/system/minio.service"
 minio_console_port: 9001
-minio_domain: "minio.tsirylab.com"
-nginx_minio_conf: "/etc/nginx/sites-available/minio.tsirylab.com"
 
 postgresql_packages:
   - postgresql
   - postgresql-contrib
 postgresql_service_name: postgresql
-postgresql_version: "18"
-postgresql_conf_dir: "/etc/postgresql/18/main"
-postgresql_conf_file: "/etc/postgresql/18/main/postgresql.conf"
-pg_hba_conf_file: "/etc/postgresql/18/main/pg_hba.conf"
+postgresql_version: "16"
+postgresql_conf_dir: "/etc/postgresql/16/main"
+postgresql_conf_file: "/etc/postgresql/16/main/postgresql.conf"
+pg_hba_conf_file: "/etc/postgresql/16/main/pg_hba.conf"
 postgresql_listen_addresses: "*"
 postgresql_password: "Base!AgVm!261"
 
@@ -54,8 +52,6 @@ pgadmin_port: 5050
 pgadmin_email: technicien@tsirylab.com
 pgadmin_password: "PgAgVM!261"
 pgadmin_data_volume: pgadmin_data
-pgadmin_domain: pgadmin.tsirylab.com
-nginx_pgadmin_conf: "/etc/nginx/sites-available/pgadmin.tsirylab.com"
 
 portainer_namespace: portainer
 portainer_release_name: portainer
@@ -65,7 +61,6 @@ portainer_storage_size: 10Gi
 
 k3s_bin_path: /usr/local/bin/k3s
 k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
-
 
 users_create:
   - name: agvmdigital
@@ -89,6 +84,12 @@ proxy_apps:
   #- domain: gateway-dev
   #  port: 5020
   #  websocket: true
+  - domain: minio
+    port: 9001
+    websocket: true
+  - domain: pgadmin
+    port: 5050
+    websocket: true
 
 kubeconfig_path: /etc/rancher/k3s/k3s.yaml
 dashboard_manifest_url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
