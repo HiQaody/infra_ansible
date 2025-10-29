@@ -90,6 +90,9 @@ proxy_apps:
   - domain: pgadmin
     port: 5050
     websocket: true
+  - domain: sonarqube
+    port: 9012
+    websocket: true
 
 kubeconfig_path: /etc/rancher/k3s/k3s.yaml
 dashboard_manifest_url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
@@ -112,3 +115,26 @@ k8s_secret_namespace: default
 k8s_secret_email: technicien@tsirylab.com
 jenkins_harbor_password: "AgVm@Vp!s"
 jenkins_harbor_username: admin
+
+# defaults file for sonarqube
+sonarqube_version: "25.10.0.114319"
+sonarqube_zip_url: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-{{ sonarqube_version }}.zip"
+
+sonarqube_install_dir: "/opt/sonarqube"
+sonarqube_user: "sonarqube"
+sonarqube_group: "sonarqube"
+
+# SonarQube needs Java 17 for version 9.9+
+sonarqube_java_package: "openjdk-17-jdk"
+
+# Database settings for SonarQube
+# These should be securely managed, e.g., using Ansible Vault.
+sonarqube_db_host: "localhost"
+sonarqube_db_port: "5432"
+sonarqube_db_name: "sonarqube"
+sonarqube_db_user: "postgres"
+sonarqube_db_password: "Base!AgVm!261s"
+
+# SonarQube web server settings
+sonarqube_web_host: "0.0.0.0"
+sonarqube_web_port: 9012

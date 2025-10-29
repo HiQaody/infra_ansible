@@ -1,0 +1,7 @@
+---
+# tasks to install Java for SonarQube
+- name: Install Java ({{ sonarqube_java_package }})
+  ansible.builtin.apt:
+    name: "{{ sonarqube_java_package }}"
+    state: present
+    update_cache: yes

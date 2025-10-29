@@ -1,0 +1,73 @@
+---
+# tasks file for sonarqube
+- name: Include tasks to install Java
+  ansible.builtin.include_tasks: java.yml
+
+- name: Create the SonarQube group
+  ansible.builtin.group:
+    name: "{{ sonarqube_group }}"
+    state: present
+
+- name: Create the SonarQube user
+  ansible.builtin.user:
+    name: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+    home: "{{ sonarqube_install_dir }}"
+    shell: /bin/bash
+    state: present
+
+- name: Installer l'utilitaire unzip
+  ansible.builtin.apt:
+    name: unzip
+    state: present
+    update_cache: yes
+
+- name: Download and unarchive SonarQube
+  ansible.builtin.unarchive:
+    src: "{{ sonarqube_zip_url }}"
+    dest: /opt/
+    remote_src: yes
+    creates: "/opt/sonarqube-{{ sonarqube_version }}"
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+
+- name: Create a symbolic link to the SonarQube version
+  ansible.builtin.file:
+    src: "/opt/sonarqube-{{ sonarqube_version }}"
+    dest: "{{ sonarqube_install_dir }}"
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+    state: link
+    force: yes # Overwrite if the link is incorrect
+  notify: Restart SonarQube
+
+- name: Ensure SonarQube directory ownership is correct
+  ansible.builtin.file:
+    path: "{{ sonarqube_install_dir }}"
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+    state: directory
+    recurse: yes
+
+- name: Configure SonarQube database settings
+  ansible.builtin.template:
+    src: sonar.properties.j2
+    dest: "{{ sonarqube_install_dir }}/conf/sonar.properties"
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+    mode: "0640"
+  notify: Restart SonarQube
+
+- name: Create systemd service file for SonarQube
+  ansible.builtin.template:
+    src: sonarqube.service.j2
+    dest: /etc/systemd/system/sonarqube.service
+    mode: "0644"
+  notify: Restart SonarQube
+
+- name: Enable and start SonarQube service
+  ansible.builtin.systemd:
+    name: sonarqube
+    daemon_reload: yes
+    enabled: yes
+    state: started

@@ -1,0 +1,6 @@
+---
+# handlers file for sonarqube
+- name: Restart SonarQube
+  ansible.builtin.systemd:
+    name: sonarqube
+    state: restarted

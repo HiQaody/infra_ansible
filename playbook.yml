@@ -31,10 +31,11 @@
     #- role: kubernetes
     #- role: portainer # Interface de gestion Docker, doit être après Docker
     #- role: harbor # Registry de containers, dépend de Kubernetes
-    - role: firewall # Toujours en dernier pour appliquer les règles finales
+    #- role: firewall # Toujours en dernier pour appliquer les règles finales
     #- role: k8s-dashboard
     #- role: minio       # Stockage objet, peut être utilisé par d'autres services
     #- role: reverse-proxy # Doit être après l'installation des services à proxyfier
+    - role: sonarqube
 
   post_tasks:
     - name: Afficher fin de provisioning
