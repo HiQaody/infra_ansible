@@ -1,0 +1,93 @@
+---
+- name: Appliquer le manifest officiel du Kubernetes Dashboard
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ dashboard_manifest_url }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Patch le service dashboard pour NodePort
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: kubernetes-dashboard
+        namespace: kubernetes-dashboard
+      spec:
+        type: NodePort
+        ports:
+          - port: 443
+            targetPort: 8443
+            nodePort: "{{ dashboard_nodeport }}"
+        selector:
+          k8s-app: kubernetes-dashboard
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Générer le manifest du compte admin Dashboard
+  copy:
+    dest: "{{ admin_user_manifest }}"
+    content: |
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: admin-user
+        namespace: kubernetes-dashboard
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: admin-user
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+      - kind: ServiceAccount
+        name: admin-user
+        namespace: kubernetes-dashboard
+
+- name: Appliquer le manifest admin-user
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ admin_user_manifest }}"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Attendre la création du ServiceAccount admin-user
+  kubernetes.core.k8s_info:
+    kind: ServiceAccount
+    namespace: kubernetes-dashboard
+    name: admin-user
+  register: dashboard_admin_sa
+  retries: 10
+  delay: 3
+  until: dashboard_admin_sa.resources | length > 0
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path }}"
+
+- name: Générer le token d’authentification admin-user (K8s >=1.24)
+  command: >-
+    kubectl -n kubernetes-dashboard create token admin-user --kubeconfig "{{ kubeconfig_path }}"
+  register: dashboard_token
+  changed_when: false
+  failed_when: dashboard_token.rc != 0
+
+- name: Afficher le lien d’accès Dashboard et le token
+  debug:
+    msg: |
+      🚀 Kubernetes Dashboard déployé !
+
+      Accès direct :
+        https://<IP_NODE>:{{ dashboard_nodeport }}
+
+      OU via proxy local :
+        kubectl proxy --kubeconfig {{ kubeconfig_path }}
+        http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+
+      Token d’authentification :
+      {{ dashboard_token.stdout }}
+
+      (Le Dashboard utilise un certificat autosigné. Accepte l’exception dans ton navigateur.)

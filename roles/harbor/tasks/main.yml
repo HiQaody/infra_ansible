@@ -1,74 +1,45 @@
 ---
-- name: Installer les dépendances Python pour Kubernetes
-  become: yes
-  pip:
-    name:
-      - kubernetes
-      - openshift
-      - pyyaml
-    state: present
-    executable: pip
+- name: Vérifier que kubectl est installé
+  command: kubectl version --client
+  register: kubectl_check
+  failed_when: kubectl_check.rc != 0
 
-- name: Vérifier l'installation des bibliothèques Kubernetes
-  command: python3 -c "import kubernetes; print('OK')"
-  register: kubernetes_check
-  changed_when: false
-
-- name: Installer Helm (Linux AMD64)
-  become: yes
-  shell: |
-    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-  args:
-    creates: /usr/local/bin/helm
-
-- name: Vérifier l'installation de Helm
+- name: Vérifier que Helm est installé
   command: helm version
-  register: helm_version
-  changed_when: false
+  register: helm_check
+  failed_when: helm_check.rc != 0
 
 - name: Ajouter le repo Helm Harbor
-  shell: helm repo add harbor {{ harbor_helm_repo }} && helm repo update
-  args:
-    executable: /bin/bash
-  register: harbor_repo
-  changed_when: "'harbor' in harbor_repo.stdout or 'has been added' in harbor_repo.stdout"
+  command: helm repo add harbor https://helm.goharbor.io
+  register: add_repo
+  changed_when: "'already exists' not in add_repo.stdout"
 
-- name: Verifier la version python
-  command: python3 --version
-  register: python_version
-  changed_when: false
+- name: Mettre à jour les repos Helm
+  command: helm repo update
 
-- name: Créer le namespace Harbor (idempotent)
+- name: "Harbor | Create namespace"
   kubernetes.core.k8s:
-    state: present
     api_version: v1
     kind: Namespace
     name: "{{ harbor_namespace }}"
+    state: present
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
 
-- name: Générer le fichier de valeurs pour Harbor (template)
+- name: Créer le fichier de valeurs Harbor
   template:
     src: harbor-values.yaml.j2
-    dest: "{{ harbor_values_file }}"
-    mode: "0640"
+    dest: /tmp/harbor-values.yaml
 
-- name: Installer ou mettre à jour Harbor via Helm (idempotent)
-  shell: |
-    helm upgrade --install {{ harbor_release_name }} harbor/harbor \
-      -n {{ harbor_namespace }} -f {{ harbor_values_file }}
-  args:
-    executable: /bin/bash
-  register: harbor_install
-  changed_when: "'deployed' in harbor_install.stdout or 'upgraded' in harbor_install.stdout"
-  failed_when: harbor_install.rc != 0 and 'already exists' not in (harbor_install.stderr | default(''))
-
-- name: Vérifier le déploiement de Harbor
-  kubernetes.core.k8s_info:
-    kind: Pod
-    namespace: "{{ harbor_namespace }}"
-    label_selectors:
-      - "app={{ harbor_namespace_labels.app | default('harbor') }}"
-  register: harbor_pods
-
-- name: Afficher l'état des pods Harbor
-  debug:
-    var: harbor_pods.resources | map(attribute='status.phase') | list
+- name: Installer Harbor via Helm
+  kubernetes.core.helm:
+    name: harbor
+    chart_ref: harbor/harbor
+    release_namespace: "{{ harbor_namespace }}"
+    values_files:
+      - /tmp/harbor-values.yaml
+    state: present
+    wait: true
+    timeout: "600s"
+  environment:
+    KUBECONFIG: "{{ kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"

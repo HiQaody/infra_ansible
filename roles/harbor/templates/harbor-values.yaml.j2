@@ -6,16 +6,22 @@ expose:
     name: harbor
     ports:
       http:
-        port: {{ harbor_nodeport }}
+        port: {{ harbor_nodeport_http }}
       https:
-        port: 32443
+        port: {{ harbor_nodeport_https }}
 harborAdminPassword: "{{ harbor_admin_password }}"
 persistence:
   enabled: true
   persistentVolumeClaim:
-    registry: { size: 5Gi }
-    chartmuseum: { size: 5Gi }
-    jobservice: { size: 1Gi }
-    database: { size: 1Gi }
-    redis: { size: 1Gi }
-    trivy: { size: 5Gi }
+    registry:
+      size: {{ harbor_persistence_size_registry }}
+    chartmuseum:
+      size: {{ harbor_persistence_size_chartmuseum }}
+    jobservice:
+      size: {{ harbor_persistence_size_jobservice }}
+    database:
+      size: {{ harbor_persistence_size_database }}
+    redis:
+      size: {{ harbor_persistence_size_redis }}
+    trivy:
+      size: {{ harbor_persistence_size_trivy }}

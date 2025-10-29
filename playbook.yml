@@ -28,10 +28,11 @@
     # - role: grafana    # Monitoring, dépend de DB ou Prometheus
     # - role: prometheus # Monitoring, exporter metrics avant Grafana
     #- role: secure_server # Sécurisation générale (firewall, fail2ban, etc.)
-    - role: kubernetes
-    - role: portainer # Interface de gestion Docker, doit être après Docker
-    #- role: harbor # Registry de containers, dépend de Kubernetes
+    #- role: kubernetes
+    #- role: portainer # Interface de gestion Docker, doit être après Docker
+    - role: harbor # Registry de containers, dépend de Kubernetes
     # - role: firewall # Toujours en dernier pour appliquer les règles finales
+    #- role: k8s-dashboard
     - role: reverse-proxy # Doit être après l'installation des services à proxyfier
 
   post_tasks:

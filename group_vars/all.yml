@@ -66,12 +66,6 @@ portainer_storage_size: 10Gi
 k3s_bin_path: /usr/local/bin/k3s
 k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
 
-harbor_helm_repo: "https://helm.goharbor.io"
-harbor_namespace: "harbor"
-harbor_release_name: "harbor"
-harbor_values_file: "/tmp/harbor-values.yaml"
-harbor_nodeport: 30001
-harbor_admin_password: "HarBorAmdin123!"
 
 users_create:
   - name: agvmdigital
@@ -80,15 +74,40 @@ users_create:
     shell: /bin/bash
 
 proxy_apps:
-  - domain: jenkins
-    port: 8080
-    websocket: true
-  - domain: portainer
-    port: 30777
-    websocket: true
-  #- domain: harbor
+  #- domain: jenkins
+  #  port: 8080
+  #  websocket: true
+  #- domain: portainer
+  #  port: 30777
+  #  websocket: true
+  #- domain: dashboard
   #  port: 30002
-  #  client_max_body_size: 2G
+  #  websocket: true
+  - domain: harbor
+    port: 30003
+    client_max_body_size: 2G
   #- domain: gateway-dev
   #  port: 5020
   #  websocket: true
+
+kubeconfig_path: /etc/rancher/k3s/k3s.yaml
+dashboard_manifest_url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
+dashboard_nodeport: 30002
+admin_user_manifest: "/tmp/dashboard-admin-user.yaml"
+
+harbor_namespace: harbor
+harbor_admin_password: "AgVm@harbor"
+harbor_nodeport_http: 30003
+harbor_nodeport_https: 32443
+harbor_persistence_size_registry: "5Gi"
+harbor_persistence_size_chartmuseum: "5Gi"
+harbor_persistence_size_jobservice: "1Gi"
+harbor_persistence_size_database: "1Gi"
+harbor_persistence_size_redis: "1Gi"
+harbor_persistence_size_trivy: "5Gi"
+harbor_url: "harbor.agvm.tsirylab.com"
+k8s_secret_name: jenkins-harbor-secret
+k8s_secret_namespace: default
+k8s_secret_email: technicien@tsirylab.com
+jenkins_harbor_password: "AgVm@Vp!s"
+jenkins_harbor_username: admin
