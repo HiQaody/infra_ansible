@@ -1,11 +1,13 @@
 ---
+# Tâches pour configurer le pare-feu UFW
+
 - name: Installer le pare-feu UFW
   apt:
     name: ufw
     state: present
     update_cache: yes
 
-- name: Définir la politique par défaut (entrant   deny)
+- name: Définir la politique par défaut (entrant deny)
   ufw:
     direction: incoming
     policy: deny
@@ -20,18 +22,28 @@
     rule: allow
     port: "{{ ssh_port }}"
     proto: tcp
+    comment: "Allow SSH access for remote administration"
 
 - name: Autoriser HTTP
   ufw:
     rule: allow
     port: 80
     proto: tcp
+    comment: "Allow HTTP traffic for web services"
 
 - name: Autoriser HTTPS
   ufw:
     rule: allow
     port: 443
     proto: tcp
+    comment: "Allow HTTPS traffic for secure web services"
+
+- name: Autoriser le port PostgreSQL
+  ufw:
+    rule: allow
+    port: 5432
+    proto: tcp
+    comment: "Allow PostgreSQL database access"
 
 - name: Activer UFW
   ufw:
