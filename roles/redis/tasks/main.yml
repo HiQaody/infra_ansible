@@ -1,0 +1,29 @@
+---
+- name: Installer Redis
+  apt:
+    name: redis-server
+    state: present
+  become: yes
+
+- name: Configurer le port Redis
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^port '
+    line: "port {{ redis_port }}"
+  notify: Redémarrer Redis
+  become: yes
+
+- name: Configurer le mot de passe Redis
+  lineinfile:
+    path: /etc/redis/redis.conf
+    regexp: '^# requirepass|^requirepass'
+    line: "requirepass {{ redis_password }}"
+  notify: Redémarrer Redis
+  become: yes
+
+- name: S'assurer que Redis est démarré et activé
+  service:
+    name: redis-server
+    state: started
+    enabled: yes
+  become: yes

@@ -20,7 +20,7 @@
     #- role: python # Installer Python 3 et pip pour les autres rôles
     #- role: users        # Toujours gérer les utilisateurs en premier pour la sécurité
     #- role: ssh_server
-    #- role: docker       # Docker doit être prêt avant les rôles dépendants de containers
+    - role: docker       # Docker doit être prêt avant les rôles dépendants de containers
     #- role: nginx        # Nginx peut servir de proxy pour les services installés ensuite
     #- role: jenkins    # CI/CD, peut dépendre de Docker/Nginx
     #- role: postgresql # Base de données, souvent avant pgAdmin
@@ -34,8 +34,9 @@
     #- role: firewall # Toujours en dernier pour appliquer les règles finales
     #- role: k8s-dashboard
     #- role: minio       # Stockage objet, peut être utilisé par d'autres services
+    #- role: redis # Doit être avant les services qui utilisent Redis
+    #- role: sonarqube # Doit être après la DB et avant le reverse-proxy
     #- role: reverse-proxy # Doit être après l'installation des services à proxyfier
-    - role: sonarqube
 
   post_tasks:
     - name: Afficher fin de provisioning
