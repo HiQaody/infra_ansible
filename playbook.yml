@@ -20,22 +20,22 @@
     #- role: python # Installer Python 3 et pip pour les autres rôles
     #- role: users        # Toujours gérer les utilisateurs en premier pour la sécurité
     #- role: ssh_server
-    - role: docker       # Docker doit être prêt avant les rôles dépendants de containers
+    #- role: docker       # Docker doit être prêt avant les rôles dépendants de containers
     #- role: nginx        # Nginx peut servir de proxy pour les services installés ensuite
     #- role: jenkins    # CI/CD, peut dépendre de Docker/Nginx
-    #- role: postgresql # Base de données, souvent avant pgAdmin
-    #- role: pgadmin    # Interface web pour PostgreSQL, dépend du DB et du réseau Docker
-    # - role: grafana    # Monitoring, dépend de DB ou Prometheus
-    # - role: prometheus # Monitoring, exporter metrics avant Grafana
-    #- role: secure_server # Sécurisation générale (firewall, fail2ban, etc.)
-    #- role: kubernetes
-    #- role: portainer # Interface de gestion Docker, doit être après Docker
-    #- role: harbor # Registry de containers, dépend de Kubernetes
-    #- role: firewall # Toujours en dernier pour appliquer les règles finales
-    #- role: k8s-dashboard
-    #- role: minio       # Stockage objet, peut être utilisé par d'autres services
-    #- role: redis # Doit être avant les services qui utilisent Redis
+    - role: postgresql # Base de données, souvent avant pgAdmin
+    - role: pgadmin    # Interface web pour PostgreSQL, dépend du DB et du réseau Docker
+    - role: kubernetes
+    - role: portainer # Interface de gestion Docker, doit être après Docker
+    - role: k8s-dashboard
+    - role: minio       # Stockage objet, peut être utilisé par d'autres services
+    - role: redis # Doit être avant les services qui utilisent Redis
+    - role: harbor # Registry de containers, dépend de Kubernetes
     #- role: sonarqube # Doit être après la DB et avant le reverse-proxy
+    - role: grafana    # Monitoring, dépend de DB ou Prometheus
+    - role: prometheus # Monitoring, exporter metrics avant Grafana
+    - role: firewall # Toujours en dernier pour appliquer les règles finales
+    - role: secure_server # Sécurisation générale (firewall, fail2ban, etc.)
     #- role: reverse-proxy # Doit être après l'installation des services à proxyfier
 
   post_tasks:

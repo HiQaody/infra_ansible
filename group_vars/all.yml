@@ -1,15 +1,16 @@
 ---
-ssh_port: 3127
+ssh_port: 3124
 
 jenkins_port: 8080
 jenkins_java_packages:
   - fontconfig
   - openjdk-21-jre
-jenkins_gpg_key_url: "https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key"
+jenkins_gpg_key_url: "https://pkg.jenkins.io/debian/jenkins.io-2023.key"
 jenkins_gpg_key_path: "/usr/share/keyrings/jenkins-keyring.asc"
 jenkins_repo: "deb [signed-by={{ jenkins_gpg_key_path }}] https://pkg.jenkins.io/debian-stable binary/"
 jenkins_list_path: "/etc/apt/sources.list.d/jenkins.list"
 jenkins_service_name: "jenkins"
+
 
 minio_bin_url: "https://dl.min.io/server/minio/release/linux-amd64/minio"
 minio_bin_path: "/usr/local/bin/minio"
@@ -18,7 +19,7 @@ minio_group: "minio-user"
 minio_storage_dir: "/data/minio"
 minio_env_file: "/etc/default/minio"
 minio_access_key: "minioadmin"
-minio_secret_key: "MinIO@gVm261"
+minio_secret_key: "MinIO@Dd261"
 minio_service_file: "/etc/systemd/system/minio.service"
 minio_console_port: 9001
 
@@ -31,7 +32,7 @@ postgresql_conf_dir: "/etc/postgresql/16/main"
 postgresql_conf_file: "/etc/postgresql/16/main/postgresql.conf"
 pg_hba_conf_file: "/etc/postgresql/16/main/pg_hba.conf"
 postgresql_listen_addresses: "*"
-postgresql_password: "Base!AgVm!261"
+postgresql_password: "Base!Dd261"
 
 docker_packages:
   - docker.io
@@ -42,7 +43,7 @@ docker_group: docker
 
 docker_user: "{{ ansible_user }}"
 docker_users:
-  - "agvmdigital"
+  - "ddigital"
   - "jenkins"
 
 pgadmin_network: pgnetwork
@@ -51,7 +52,7 @@ pgadmin_image: dpage/pgadmin4
 pgadmin_restart_policy: always
 pgadmin_port: 5050
 pgadmin_email: technicien@tsirylab.com
-pgadmin_password: "PgAgVM!261"
+pgadmin_password: "PgDd261"
 pgadmin_data_volume: pgadmin_data
 
 portainer_namespace: portainer
@@ -64,35 +65,45 @@ k3s_bin_path: /usr/local/bin/k3s
 k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
 
 users_create:
-  - name: agvmdigital
-    password: "{{ 'AgVm@Vp!s' | password_hash('sha512') }}"
+  - name: ddigital
+    password: "{{ 'Ddm@Vd!s' | password_hash('sha512') }}"
     groups: "sudo"
     shell: /bin/bash
 
 proxy_apps:
-  #- domain: jenkins
-  #  port: 8080
-  #  websocket: true
-  #- domain: portainer
-  #  port: 30777
-  #  websocket: true
-  #- domain: dashboard
-  #  port: 30002
-  #  websocket: true
+  - domain: jenkins
+    port: 8080
+    websocket: true
+  - domain: portainer
+    port: 30777
+    websocket: true
+  - domain: dashboard
+    port: 30002
+    websocket: true
   - domain: harbor
     port: 30003
     client_max_body_size: 2G
-  #- domain: gateway-dev
-  #  port: 5020
-  #  websocket: true
   - domain: minio
     port: 9001
     websocket: true
   - domain: pgadmin
     port: 5050
     websocket: true
-  - domain: sonarqube
-    port: 9012
+  #- domain: sonarqube
+  #  port: 9012
+  #  websocket: true
+  #- domain: diamadio
+  #  port: 30042
+  #- domain: diamadio-admin
+  #  port: 30043
+  #- domain: criv
+  #  port: 30040
+  #  websocket: true
+  #- domain: criv-admin
+  #  port: 30041
+  #  websocket: true
+  - domain: gateway
+    port: 32080
     websocket: true
 
 kubeconfig_path: /etc/rancher/k3s/k3s.yaml
@@ -101,7 +112,7 @@ dashboard_nodeport: 30002
 admin_user_manifest: "/tmp/dashboard-admin-user.yaml"
 
 harbor_namespace: harbor
-harbor_admin_password: "AgVm@harbor"
+harbor_admin_password: "Ddm@harbor"
 harbor_nodeport_http: 30003
 harbor_nodeport_https: 32443
 harbor_persistence_size_registry: "5Gi"
@@ -114,7 +125,7 @@ harbor_url: "harbor.agvm.tsirylab.com"
 k8s_secret_name: jenkins-harbor-secret
 k8s_secret_namespace: default
 k8s_secret_email: technicien@tsirylab.com
-jenkins_harbor_password: "AgVm@Vp!s"
+jenkins_harbor_password: "Ddm@Vp!s"
 jenkins_harbor_username: admin
 
 # defaults file for sonarqube
@@ -134,11 +145,11 @@ sonarqube_db_host: "localhost"
 sonarqube_db_port: "5432"
 sonarqube_db_name: "sonarqube"
 sonarqube_db_user: "postgres"
-sonarqube_db_password: "Base!AgVm!261s"
+sonarqube_db_password: "Base!Dd261s"
 
 # SonarQube web server settings
 sonarqube_web_host: "0.0.0.0"
 sonarqube_web_port: 9012
 
 redis_port: 6379
-redis_password: "Redis@Vm261"
+redis_password: "Redis@Dd261"
