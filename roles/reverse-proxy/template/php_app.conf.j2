@@ -11,35 +11,37 @@ server {
     {% endif %}
 
     location / {
-        try_files $uri $uri/ =404;
+        try_files $uri $uri/ /index.php?$query_string;
     }
 
-    location ~ [^/]\.php(/|$) {
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/run/php/php{{ php_version }}-fpm.sock;
-        fastcgi_index index.php;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-    }
-
-    location ~* \.php$ {
-        include fastcgi_params;
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/run/php/php{{ php_version }}-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-        fastcgi_intercept_errors on;
-        fastcgi_buffers 16 16k;
-        fastcgi_buffer_size 32k;
+        include fastcgi_params;
+        
+        # Sécurité supplémentaire
+        fastcgi_hide_header X-Powered-By;
+        fastcgi_read_timeout 300;
     }
 
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-        expires max;
+    location ~ /\.ht {
+        deny all;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
         log_not_found off;
     }
 
-    {% if ssl_enabled | default(true) %}
-    listen 443 ssl;
+    # Sécurité
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    {% if ssl_enabled %}
+    listen 443 ssl http2;
     ssl_certificate /etc/letsencrypt/live/{{ item.domain }}.{{ item.tld | default('agvm.mg') }}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/{{ item.domain }}.{{ item.tld | default('agvm.mg') }}/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
@@ -47,7 +49,7 @@ server {
     {% endif %}
 }
 
-{% if ssl_enabled | default(true) %}
+{% if ssl_enabled %}
 server {
     server_name {{ item.domain }}.{{ item.tld | default('agvm.mg') }};
     listen 80;

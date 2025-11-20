@@ -70,6 +70,9 @@ users_create:
     groups: "sudo"
     shell: /bin/bash
 
+php_version: "8.3"
+certbot_email: "admin@tsirylab.com"
+ssl_enabled: true
 proxy_apps:
   #- domain: jenkins
   #  port: 8080
@@ -120,20 +123,16 @@ proxy_apps:
   #- domain: urbanisme
   #  port: 30049
   #  websocket: true
-  - domain: ihofana
-    port: 30052
-    websocket: true
-
-php_version: "8.1"
-certbot_email: "admin@tsirylab.com"
-ssl_enabled: true
-
-php_apps:
-  - name: "ihofana"
-    domain: "ihofana"
+  #- domain: ihofana
+  #  port: 30052
+  #  websocket: true
+  - domain: "ihofana"
+    name: "ihofana"
+    type: "php"
     tld: "agvm.mg"
     root: "/var/www/html/ihofana"
     client_max_body_size: "250M"
+
   
 kubeconfig_path: /etc/rancher/k3s/k3s.yaml
 dashboard_manifest_url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
