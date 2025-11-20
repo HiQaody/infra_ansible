@@ -71,24 +71,24 @@ users_create:
     shell: /bin/bash
 
 proxy_apps:
-  - domain: jenkins
-    port: 8080
-    websocket: true
-  - domain: portainer
-    port: 30777
-    websocket: true
-  - domain: dashboard
-    port: 30002
-    websocket: true
-  - domain: harbor
-    port: 30003
-    client_max_body_size: 2G
-  - domain: minio
-    port: 9001
-    websocket: true
-  - domain: pgadmin
-    port: 5050
-    websocket: true
+  #- domain: jenkins
+  #  port: 8080
+  #  websocket: true
+  #- domain: portainer
+  #  port: 30777
+  #  websocket: true
+  #- domain: dashboard
+  #  port: 30002
+  #  websocket: true
+  #- domain: harbor
+  #  port: 30003
+  #  client_max_body_size: 2G
+  #- domain: minio
+  #  port: 9001
+  #  websocket: true
+  #- domain: pgadmin
+  #  port: 5050
+  #  websocket: true
   #- domain: sonarqube
   #  port: 9012
   #  websocket: true
@@ -102,10 +102,39 @@ proxy_apps:
   #- domain: criv-admin
   #  port: 30041
   #  websocket: true
-  - domain: gateway
-    port: 32080
+  #- domain: gateway
+  #  port: 32080
+  #  websocket: true
+  #- domain: anjaranaka
+  #  port: 30046
+  #  websocket: true
+  #- domain: izotra
+  #  port: 30044
+  #  websocket: true
+  #- domain: matac
+  #  port: 30050
+  #  websocket: true
+  #- domain: matac-commune
+  #  port: 30051
+  #  websocket: true
+  #- domain: urbanisme
+  #  port: 30049
+  #  websocket: true
+  - domain: ihofana
+    port: 30052
     websocket: true
 
+php_version: "8.1"
+certbot_email: "admin@tsirylab.com"
+ssl_enabled: true
+
+php_apps:
+  - name: "ihofana"
+    domain: "ihofana"
+    tld: "agvm.mg"
+    root: "/var/www/html/ihofana"
+    client_max_body_size: "250M"
+  
 kubeconfig_path: /etc/rancher/k3s/k3s.yaml
 dashboard_manifest_url: "https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml"
 dashboard_nodeport: 30002

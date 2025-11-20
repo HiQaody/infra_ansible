@@ -1,0 +1,56 @@
+server {
+    server_name {{ item.domain }}.{{ item.tld | default('agvm.mg') }};
+
+    root {{ item.root | default('/var/www/html/' + item.name) }};
+    index index.php index.html index.htm;
+
+    {% if item.client_max_body_size is defined %}
+    client_max_body_size {{ item.client_max_body_size }};
+    {% else %}
+    client_max_body_size 128M;
+    {% endif %}
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ [^/]\.php(/|$) {
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/run/php/php{{ php_version }}-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+    }
+
+    location ~* \.php$ {
+        include fastcgi_params;
+        fastcgi_pass unix:/run/php/php{{ php_version }}-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        fastcgi_intercept_errors on;
+        fastcgi_buffers 16 16k;
+        fastcgi_buffer_size 32k;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires max;
+        log_not_found off;
+    }
+
+    {% if ssl_enabled | default(true) %}
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/{{ item.domain }}.{{ item.tld | default('agvm.mg') }}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/{{ item.domain }}.{{ item.tld | default('agvm.mg') }}/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    {% endif %}
+}
+
+{% if ssl_enabled | default(true) %}
+server {
+    server_name {{ item.domain }}.{{ item.tld | default('agvm.mg') }};
+    listen 80;
+    return 301 https://$host$request_uri;
+}
+{% endif %}

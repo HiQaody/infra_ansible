@@ -1,20 +1,40 @@
 ---
-- name: Générer les configurations NGINX pour chaque app
+#- name: Installer PHP-FPM
+#  apt:
+#    name:
+#      - php
+#      - php-fpm
+#      - php-pgsql
+#      - php-xml
+#      - php-mbstring
+#      - php-curl
+#      - php-zip
+#      - php-gd
+#      - php-intl
+#    state: present
+
+- name: Générer les configurations NGINX pour apps proxy
   template:
-    src: "template/proxy_app.conf.j2"
-    dest: "/etc/nginx/sites-available/{{ item.domain }}.agvm.tsirylab.com"
-    owner: root
-    group: root
-    mode: "0644"
+    src: "templates/proxy_app.conf.j2"
+    dest: "/etc/nginx/sites-available/{{ item.domain }}.{{ item.tld | default('agvm.mg') }}"
   loop: "{{ proxy_apps }}"
+  when: proxy_apps is defined
+  notify: Reload nginx
+
+- name: Générer les configurations NGINX pour apps PHP
+  template:
+    src: "templates/php_app.conf.j2"
+    dest: "/etc/nginx/sites-available/{{ item.domain }}.{{ item.tld | default('agvm.mg') }}"
+  loop: "{{ php_apps }}"
+  when: php_apps is defined
   notify: Reload nginx
 
 - name: Activer les sites
   file:
-    src: "/etc/nginx/sites-available/{{ item.domain }}.agvm.tsirylab.com"
-    dest: "/etc/nginx/sites-enabled/{{ item.domain }}.agvm.tsirylab.com"
+    src: "/etc/nginx/sites-available/{{ item.domain }}.{{ item.tld | default('agvm.mg') }}"
+    dest: "/etc/nginx/sites-enabled/{{ item.domain }}.{{ item.tld | default('agvm.mg') }}"
     state: link
-  loop: "{{ proxy_apps }}"
+  loop: "{{ proxy_apps + php_apps | default([]) }}"
   notify: Reload nginx
 
 - name: Test nginx config
@@ -24,6 +44,6 @@
   notify: Reload nginx
 
 - name: Générer les certificats SSL avec certbot
-  command: certbot --nginx -d {{ item.domain }}.agvm.tsirylab.com --non-interactive --agree-tos --email admin@tsirylab.com --redirect
-  loop: "{{ proxy_apps }}"
+  command: certbot --nginx -d {{ item.domain }}.{{ item.tld | default('agvm.mg') }} --non-interactive --agree-tos --email {{ certbot_email | default('admin@tsirylab.com') }} --redirect
+  loop: "{{ proxy_apps + php_apps | default([]) }}"
   ignore_errors: yes
