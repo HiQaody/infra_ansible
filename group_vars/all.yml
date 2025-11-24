@@ -141,6 +141,11 @@ proxy_apps:
     type: "proxy"
     port: 30049
     websocket: true
+  - domain: hailalana
+    type: "proxy"
+    port: 30048
+    websocket: true
+    client_max_body_size: "250M"
   #- domain: "ihofana"
   #  name: "ihofana"
   #  type: "php"

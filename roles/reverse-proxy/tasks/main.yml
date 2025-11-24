@@ -24,6 +24,6 @@
   notify: Reload nginx
 
 - name: Générer les certificats SSL avec certbot
-  command: certbot --nginx -d {{ item.domain }}.agvm.tsirylab.com --non-interactive --agree-tos --email admin@tsirylab.com --redirect
+  command: certbot --nginx -d {{ item.domain }}.agvm.mg --non-interactive --agree-tos --email admin@tsirylab.com --redirect
   loop: "{{ proxy_apps }}"
   ignore_errors: yes
