@@ -1,0 +1,80 @@
+---
+- name: Arrêter le service PHP 8.3 FPM
+  systemd:
+    name: php8.3-fpm
+    state: stopped
+  ignore_errors: yes
+
+- name: Supprimer les paquets PHP 8.3
+  apt:
+    name:
+      - php8.3
+      - php8.3-fpm
+      - php8.3-common
+      - php8.3-cli
+      - php8.3-mysql
+      - php8.3-curl
+      - php8.3-gd
+      - php8.3-mbstring
+      - php8.3-xml
+      - php8.3-zip
+      - php8.3-json
+      - php8.3-bcmath
+      - php8.3-pgsql
+    state: absent
+    purge: yes
+  ignore_errors: yes
+
+- name: Ajouter le dépôt pour PHP 7.4
+  apt_repository:
+    repo: "ppa:ondrej/php"
+    state: present
+
+- name: Mettre à jour le cache APT
+  apt:
+    update_cache: yes
+
+- name: Installer PHP 7.4 et extensions courantes
+  apt:
+    name:
+      - php7.4
+      - php7.4-fpm
+      - php7.4-common
+      - php7.4-cli
+      - php7.4-mysql
+      - php7.4-curl
+      - php7.4-gd
+      - php7.4-mbstring
+      - php7.4-xml
+      - php7.4-zip
+      - php7.4-json
+      - php7.4-bcmath
+      - php7.4-pgsql
+      - php7.4-pdo-pgsql
+      - php7.4-pdo
+    state: present
+
+- name: Démarrer et activer le service PHP 7.4 FPM
+  systemd:
+    name: php7.4-fpm
+    state: started
+    enabled: yes
+
+- name: Vérifier la version de PHP
+  command: php7.4 -v
+  register: php_version
+  changed_when: false
+
+- name: Afficher la version de PHP installée
+  debug:
+    var: php_version.stdout
+
+- name: Vérifier le statut du service PHP 7.4 FPM
+  systemd:
+    name: php7.4-fpm
+  register: php_fpm_status
+  changed_when: false
+
+- name: Afficher le statut du service PHP FPM
+  debug:
+    var: php_fpm_status

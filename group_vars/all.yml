@@ -95,43 +95,58 @@ proxy_apps:
   #- domain: sonarqube
   #  port: 9012
   #  websocket: true
-  #- domain: diamadio
-  #  port: 30042
-  #- domain: diamadio-admin
-  #  port: 30043
-  #- domain: criv
-  #  port: 30040
-  #  websocket: true
-  #- domain: criv-admin
-  #  port: 30041
-  #  websocket: true
-  #- domain: gateway
-  #  port: 32080
-  #  websocket: true
-  #- domain: anjaranaka
-  #  port: 30046
-  #  websocket: true
-  #- domain: izotra
-  #  port: 30044
-  #  websocket: true
-  #- domain: matac
-  #  port: 30050
-  #  websocket: true
-  #- domain: matac-commune
-  #  port: 30051
-  #  websocket: true
-  #- domain: urbanisme
-  #  port: 30049
-  #  websocket: true
-  #- domain: ihofana
-  #  port: 30052
-  #  websocket: true
-  - domain: "ihofana"
-    name: "ihofana"
-    type: "php"
-    tld: "agvm.mg"
-    root: "/var/www/html/ihofana"
+  - domain: diamadio
+    type: "proxy"
+    port: 30042
     client_max_body_size: "250M"
+    tld: "agvm.mg"
+    websocket: true
+  - domain: diamadio-admin
+    type: "proxy"
+    port: 30043
+    websocket: true
+    client_max_body_size: "250M"
+    tld: "agvm.mg"
+  - domain: criv
+    type: "proxy"
+    port: 30040
+    websocket: true
+    client_max_body_size: "250M"
+    tld: "agvm.mg"
+  - domain: criv-admin
+    type: "proxy"
+    port: 30041
+    websocket: true
+  - domain: gateway
+    type: "proxy"
+    port: 32080
+    websocket: true
+  - domain: anjaranaka
+    type: "proxy"
+    port: 30046
+    websocket: true
+  - domain: izotra
+    type: "proxy"
+    port: 30044
+    websocket: true
+  - domain: matac
+    type: "proxy"
+    port: 30050
+    websocket: true
+  - domain: matac-commune
+    type: "proxy"
+    port: 30051
+    websocket: true
+  - domain: geoportail
+    type: "proxy"
+    port: 30049
+    websocket: true
+  #- domain: "ihofana"
+  #  name: "ihofana"
+  #  type: "php"
+  #  tld: "agvm.mg"
+  #  root: "/var/www/html/ihofana"
+  #  client_max_body_size: "250M"
 
   
 kubeconfig_path: /etc/rancher/k3s/k3s.yaml

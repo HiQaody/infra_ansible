@@ -37,6 +37,7 @@
     #- role: firewall # Toujours en dernier pour appliquer les règles finales
     #- role: secure_server # Sécurisation générale (firewall, fail2ban, etc.)
     - role: reverse-proxy # Doit être après l'installation des services à proxyfier
+    #- role: php # PHP doit être installé avant les services qui en ont besoin
 
   post_tasks:
     - name: Afficher fin de provisioning
