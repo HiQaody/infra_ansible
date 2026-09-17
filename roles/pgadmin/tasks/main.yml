@@ -1,7 +1,7 @@
 ---
 - name: Installer Docker si besoin
-  apt:
-    name: docker.io
+  dnf:
+    name: docker-ce
     state: present
 
 - name: Créer le réseau Docker pour PostgreSQL et pgAdmin

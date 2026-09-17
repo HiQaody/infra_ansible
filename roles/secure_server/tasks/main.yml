@@ -1,9 +1,9 @@
 ---
-- name: Installer fail2ban et ufw
-  apt:
+- name: Installer fail2ban et firewalld
+  dnf:
     name:
       - fail2ban
-      - ufw
+      - firewalld
     state: present
     update_cache: yes
 
@@ -33,64 +33,85 @@
 - name: Assurer le redémarrage de fail2ban si config changée
   meta: flush_handlers
 
-- name: Configurer la politique par défaut UFW (deny incoming, allow outgoing)
-  ufw:
+- name: Configurer la politique par défaut Firewalld (deny incoming, allow outgoing)
+  firewalld:
+    zone: public
+    target: DROP
+    permanent: yes
     state: enabled
-    policy: deny
-    direction: incoming
+    immediate: yes
 
 - name: Autoriser les connexions SSH
-  ufw:
-    rule: allow
-    name: OpenSSH
+  firewalld:
+    service: ssh
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port Jenkins
-  ufw:
-    rule: allow
-    port: "{{ jenkins_port }}"
-    proto: tcp
+  firewalld:
+    port: "{{ jenkins_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port Minio Console
-  ufw:
-    rule: allow
-    port: "{{ minio_console_port }}"
-    proto: tcp
+  firewalld:
+    port: "{{ minio_console_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port PostgreSQL
-  ufw:
-    rule: allow
-    port: 5432
-    proto: tcp
+  firewalld:
+    port: 5432/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port pgAdmin
-  ufw:
-    rule: allow
-    port: "{{ pgadmin_port }}"
-    proto: tcp
+  firewalld:
+    port: "{{ pgadmin_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port Portainer
-  ufw:
-    rule: allow
-    port: "{{ portainer_web_port }}"
-    proto: tcp
+  firewalld:
+    port: "{{ portainer_web_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port 80 (HTTP)
-  ufw:
-    rule: allow
-    port: 80
-    proto: tcp
+  firewalld:
+    port: 80/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port 443 (HTTPS)
-  ufw:
-    rule: allow
-    port: 443
-    proto: tcp
+  firewalld:
+    port: 443/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port Harbor NodePort
-  ufw:
-    rule: allow
-    port: "{{ harbor_nodeport }}"
-    proto: tcp
+  firewalld:
+    port: "{{ harbor_nodeport }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Redémarrer fail2ban si nécessaire
   service:

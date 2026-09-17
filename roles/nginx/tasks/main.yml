@@ -1,5 +1,5 @@
 - name: Installer NGINX
-  apt:
+  dnf:
     name: nginx
     state: present
 
@@ -18,7 +18,7 @@
 
 - name: Installer Certbot et plugin NGINX
   become: yes
-  apt:
+  dnf:
     name:
       - certbot
       - python3-certbot-nginx

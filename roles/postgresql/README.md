@@ -1,4 +1,4 @@
-Ce rôle installe PostgreSQL sur Ubuntu/Debian et permet la configuration du port et la création d'utilisateurs/bases.
+Ce rôle installe PostgreSQL sur Rocky Linux 10 et permet la configuration du port et la création d'utilisateurs/bases.
 
 Variables :
 

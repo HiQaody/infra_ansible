@@ -1,6 +1,6 @@
 ---
 - name: Mettre à jour le système
-  apt:
+  dnf:
     update_cache: yes
     upgrade: dist
 

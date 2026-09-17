@@ -1,67 +1,70 @@
 ---
 - name: Arrêter le service PHP 8.3 FPM
   systemd:
-    name: php8.3-fpm
+    name: php-fpm
     state: stopped
   ignore_errors: yes
 
-- name: Supprimer les paquets PHP 8.3
-  apt:
-    name:
-      - php8.3
-      - php8.3-fpm
-      - php8.3-common
-      - php8.3-cli
-      - php8.3-mysql
-      - php8.3-curl
-      - php8.3-gd
-      - php8.3-mbstring
-      - php8.3-xml
-      - php8.3-zip
-      - php8.3-json
-      - php8.3-bcmath
-      - php8.3-pgsql
+- name: Supprimer les paquets PHP
+  dnf:
+    name: php*
     state: absent
-    purge: yes
   ignore_errors: yes
 
-- name: Ajouter le dépôt pour PHP 7.4
-  apt_repository:
-    repo: "ppa:ondrej/php"
+- name: Installer EPEL et le dépôt Remi pour PHP
+  dnf:
+    name:
+      - epel-release
+      - yum-utils
     state: present
-
-- name: Mettre à jour le cache APT
-  apt:
     update_cache: yes
 
-- name: Installer PHP 7.4 et extensions courantes
-  apt:
+- name: Ajouter le dépôt Remi pour PHP
+  yum_repository:
+    name: remi
+    description: Remi's RPM repository for Enterprise Linux 10 - $basearch
+    baseurl: "https://rpms.remirepo.net/enterprise/10/remi/$basearch/"
+    gpgcheck: yes
+    gpgkey: "https://rpms.remirepo.net/RPM-GPG-KEY-remi"
+    state: present
+    enabled: yes
+
+- name: Activer le module PHP depuis Remi
+  command: dnf module enable php:remi-8.3 -y
+  ignore_errors: yes
+
+- name: Mettre à jour le cache DNF
+  dnf:
+    update_cache: yes
+
+- name: Installer PHP et extensions courantes
+  dnf:
     name:
-      - php7.4
-      - php7.4-fpm
-      - php7.4-common
-      - php7.4-cli
-      - php7.4-mysql
-      - php7.4-curl
-      - php7.4-gd
-      - php7.4-mbstring
-      - php7.4-xml
-      - php7.4-zip
-      - php7.4-json
-      - php7.4-bcmath
-      - php7.4-pgsql
-      - php7.4-pdo-pgsql
-      - php7.4-pdo
+      - php
+      - php-fpm
+      - php-common
+      - php-cli
+      - php-mysqlnd
+      - php-curl
+      - php-gd
+      - php-mbstring
+      - php-xml
+      - php-zip
+      - php-json
+      - php-bcmath
+      - php-pgsql
+      - php-pdo
+      - php-pdo-pgsql
     state: present
 
-- name: Démarrer et activer le service PHP 7.4 FPM
+- name: Démarrer et activer le service PHP FPM
   systemd:
-    name: php7.4-fpm
+    name: php-fpm
     state: started
     enabled: yes
 
 - name: Vérifier la version de PHP
-  command: php7.4 -v
+  command: php -v
   register: php_version
   changed_when: false
 
@@ -69,9 +72,9 @@
   debug:
     var: php_version.stdout
 
-- name: Vérifier le statut du service PHP 7.4 FPM
+- name: Vérifier le statut du service PHP FPM
   systemd:
-    name: php7.4-fpm
+    name: php-fpm
   register: php_fpm_status
   changed_when: false
 

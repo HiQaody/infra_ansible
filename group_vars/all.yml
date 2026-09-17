@@ -4,11 +4,11 @@ ssh_port: 3124
 jenkins_port: 8080
 jenkins_java_packages:
   - fontconfig
-  - openjdk-21-jre
-jenkins_gpg_key_url: "https://pkg.jenkins.io/debian/jenkins.io-2023.key"
-jenkins_gpg_key_path: "/usr/share/keyrings/jenkins-keyring.asc"
-jenkins_repo: "deb [signed-by={{ jenkins_gpg_key_path }}] https://pkg.jenkins.io/debian-stable binary/"
-jenkins_list_path: "/etc/apt/sources.list.d/jenkins.list"
+  - java-21-openjdk-devel
+jenkins_gpg_key_url: "https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key"
+jenkins_gpg_key_path: "/etc/pki/rpm-gpg/jenkins-keyring.asc"
+jenkins_repo: "https://pkg.jenkins.io/redhat-stable/jenkins.repo"
+jenkins_list_path: "/etc/yum.repos.d/jenkins.repo"
 jenkins_service_name: "jenkins"
 
 
@@ -24,18 +24,18 @@ minio_service_file: "/etc/systemd/system/minio.service"
 minio_console_port: 9001
 
 postgresql_packages:
-  - postgresql
-  - postgresql-contrib
-postgresql_service_name: postgresql
+  - postgresql16-server
+  - postgresql16-contrib
+postgresql_service_name: postgresql-16
 postgresql_version: "16"
-postgresql_conf_dir: "/etc/postgresql/16/main"
-postgresql_conf_file: "/etc/postgresql/16/main/postgresql.conf"
-pg_hba_conf_file: "/etc/postgresql/16/main/pg_hba.conf"
+postgresql_conf_dir: "/var/lib/pgsql/16/data"
+postgresql_conf_file: "/var/lib/pgsql/16/data/postgresql.conf"
+pg_hba_conf_file: "/var/lib/pgsql/16/data/pg_hba.conf"
 postgresql_listen_addresses: "*"
 postgresql_password: "Base!Dd261"
 
 docker_packages:
-  - docker.io
+  - docker-ce
   - docker-compose-plugin
 
 docker_service_name: docker
@@ -60,6 +60,7 @@ portainer_release_name: portainer
 portainer_chart_version: 1.0.47
 portainer_nodeport: 30777
 portainer_storage_size: 10Gi
+portainer_web_port: 30777
 
 k3s_bin_path: /usr/local/bin/k3s
 k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
@@ -67,7 +68,7 @@ k3s_kubeconfig: /etc/rancher/k3s/k3s.yaml
 users_create:
   - name: ddigital
     password: "{{ 'Ddm@Vd!s' | password_hash('sha512') }}"
-    groups: "sudo"
+    groups: "wheel"
     shell: /bin/bash
 
 php_version: "8.3"
@@ -185,7 +186,7 @@ sonarqube_user: "sonarqube"
 sonarqube_group: "sonarqube"
 
 # SonarQube needs Java 17 for version 9.9+
-sonarqube_java_package: "openjdk-17-jdk"
+sonarqube_java_package: "java-17-openjdk-devel"
 
 # Database settings for SonarQube
 # These should be securely managed, e.g., using Ansible Vault.
@@ -200,4 +201,5 @@ sonarqube_web_host: "0.0.0.0"
 sonarqube_web_port: 9012
 
 redis_port: 6379
+redis_service_name: redis
 redis_password: "Redis@Dd261"

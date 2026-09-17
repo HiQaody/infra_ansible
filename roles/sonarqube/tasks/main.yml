@@ -17,7 +17,7 @@
     state: present
 
 - name: Installer l'utilitaire unzip
-  ansible.builtin.apt:
+  ansible.builtin.dnf:
     name: unzip
     state: present
     update_cache: yes

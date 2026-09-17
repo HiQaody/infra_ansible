@@ -19,7 +19,7 @@ Les principales variables à définir (dans `group_vars/all.yml`) :
 kubernetes_kubectl_url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
 kubectl_version: "{{ lookup('url', 'https://dl.k8s.io/release/stable.txt') | trim }}"
 kubectl_bin_path: "/usr/local/bin/kubectl"
-docker_package: docker.io
+docker_package: docker-ce
 ```
 
 ## Tâches réalisées

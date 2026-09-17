@@ -1,13 +1,13 @@
 ---
 - name: Installer le serveur OpenSSH
-  apt:
+  dnf:
     name: openssh-server
     state: present
     update_cache: yes
 
 - name: S'assurer que le service SSH est lancé et activé
   service:
-    name: ssh
+    name: sshd
     state: started
     enabled: yes
 
@@ -28,19 +28,21 @@
     backup: yes
 
 
-- name: Désactiver la port SSH par défaut (22) dans UFW
-  ufw:
-    rule: deny
-    port: 22
-    proto: tcp
+- name: Désactiver la port SSH par défaut (22) dans Firewalld
+  firewalld:
+    port: 22/tcp
+    permanent: yes
+    state: disabled
+    immediate: yes
 
-- name: Autoriser le nouveau port SSH dans UFW
-  ufw:
-    rule: allow
-    port: "{{ ssh_port }}"
-    proto: tcp
+- name: Autoriser le nouveau port SSH dans Firewalld
+  firewalld:
+    port: "{{ ssh_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
 
 - name: Redémarrer le service SSH si la configuration a changé
   service:
-    name: ssh
+    name: sshd
     state: restarted

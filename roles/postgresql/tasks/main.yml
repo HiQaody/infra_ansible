@@ -2,14 +2,19 @@
 # Tâches pour installer et configurer PostgreSQL
 
 - name: Mettre à jour le système
-  apt:
+  dnf:
     update_cache: yes
     upgrade: dist
 
 - name: Installer PostgreSQL et les paquets complémentaires
-  apt:
+  dnf:
     name: "{{ postgresql_packages }}"
     state: present
+
+- name: Initialiser la base de données PostgreSQL
+  command: postgresql-setup --initdb
+  args:
+    creates: /var/lib/pgsql/16/data/PG_VERSION
 
 - name: Vérifier la version de PostgreSQL
   command: psql --version

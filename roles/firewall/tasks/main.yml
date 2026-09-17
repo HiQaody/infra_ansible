@@ -1,58 +1,68 @@
 ---
-# Tâches pour configurer le pare-feu UFW
+# Tâches pour configurer le pare-feu Firewalld
 
-- name: Installer le pare-feu UFW
-  apt:
-    name: ufw
+- name: Installer le pare-feu Firewalld
+  dnf:
+    name: firewalld
     state: present
     update_cache: yes
 
 - name: Définir la politique par défaut (entrant deny)
-  ufw:
-    direction: incoming
-    policy: deny
+  firewalld:
+    zone: public
+    target: DROP
+    permanent: yes
+    state: enabled
+    immediate: yes
 
 - name: Définir la politique par défaut (sortant allow)
-  ufw:
-    direction: outgoing
-    policy: allow
+  firewalld:
+    zone: public
+    outgoing_interface: default
+    permanent: yes
 
 - name: Autoriser SSH
-  ufw:
-    rule: allow
-    port: "{{ ssh_port }}"
-    proto: tcp
-    comment: "Allow SSH access for remote administration"
+  firewalld:
+    port: "{{ ssh_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser HTTP
-  ufw:
-    rule: allow
-    port: 80
-    proto: tcp
-    comment: "Allow HTTP traffic for web services"
+  firewalld:
+    port: 80/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser HTTPS
-  ufw:
-    rule: allow
-    port: 443
-    proto: tcp
-    comment: "Allow HTTPS traffic for secure web services"
+  firewalld:
+    port: 443/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
+    zone: public
 
 - name: Autoriser le port PostgreSQL
-  ufw:
-    rule: allow
-    port: 5432
-    proto: tcp
-    comment: "Allow PostgreSQL database access"
-
-- name: Activer UFW
-  ufw:
+  firewalld:
+    port: 5432/tcp
+    permanent: yes
     state: enabled
+    immediate: yes
+    zone: public
 
-- name: Afficher le statut UFW
-  command: ufw status verbose
-  register: ufw_status
+- name: Activer Firewalld
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
 
-- name: Afficher les règles UFW
+- name: Afficher le statut Firewalld
+  command: firewall-cmd --state
+  register: fw_status
+
+- name: Afficher les règles Firewalld
   debug:
-    msg: "{{ ufw_status.stdout }}"
+    msg: "{{ fw_status.stdout }}"

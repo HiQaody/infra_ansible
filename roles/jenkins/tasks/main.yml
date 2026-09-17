@@ -1,18 +1,17 @@
 ---
 - name: Installer Java (prérequis Jenkins)
-  apt:
-    name: 
-      - openjdk-21-jdk
+  dnf:
+    name:
+      - java-21-openjdk-devel
       - fontconfig
     state: present
     update_cache: yes
 
 - name: Créer le répertoire pour les clés
   file:
-    path: /usr/share/keyrings
+    path: /etc/pki/rpm-gpg
     state: directory
     mode: '0755'
-  when: ansible_os_family == "Debian"
 
 - name: Télécharger la clé GPG Jenkins (nouvelle méthode)
   get_url:
@@ -22,27 +21,29 @@
     force: yes
 
 - name: Ajouter le dépôt Jenkins avec signature
-  apt_repository:
-    repo: "{{ jenkins_repo }}"
+  yum_repository:
+    name: jenkins
+    description: Jenkins Repository
+    baseurl: "https://pkg.jenkins.io/redhat-stable"
+    gpgcheck: yes
+    gpgkey: "{{ jenkins_gpg_key_path }}"
     state: present
-    filename: jenkins
-    update_cache: no
-    mode: '0644'
+    enabled: yes
 
-- name: Mettre à jour le cache APT après ajout du dépôt
-  apt:
+- name: Mettre à jour le cache DNF après ajout du dépôt
+  dnf:
     update_cache: yes
     cache_valid_time: 3600
 
 - name: Installer Jenkins
-  apt:
+  dnf:
     name: jenkins
     state: present
     update_cache: no
 
 - name: Modifier le port d'écoute de Jenkins
   lineinfile:
-    path: /etc/default/jenkins
+    path: /etc/sysconfig/jenkins
     regexp: "^HTTP_PORT="
     line: "HTTP_PORT={{ jenkins_port }}"
     backup: yes
@@ -55,7 +56,8 @@
     enabled: yes
 
 - name: Autoriser le port d'écoute de Jenkins
-  ufw:
-    rule: allow
-    port: "{{ jenkins_port }}"
-    proto: tcp
+  firewalld:
+    port: "{{ jenkins_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes

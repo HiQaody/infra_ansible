@@ -6,13 +6,13 @@
     - group_vars/all.yml
 
   pre_tasks:
-    - name: Mise à jour du cache APT
-      ansible.builtin.apt:
+    - name: Mise à jour du cache DNF
+      ansible.builtin.dnf:
         update_cache: yes
         cache_valid_time: 3600
 
     - name: Upgrade du système (optionnel)
-      ansible.builtin.apt:
+      ansible.builtin.dnf:
         upgrade: dist
       when: upgrade_system | default(false)
 

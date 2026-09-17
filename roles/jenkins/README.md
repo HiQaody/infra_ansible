@@ -1,4 +1,4 @@
-Ce rôle installe Jenkins sur Ubuntu/Debian.
+Ce rôle installe Jenkins sur Rocky Linux 10.
 
 Variables :
 

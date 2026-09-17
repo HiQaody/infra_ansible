@@ -1,4 +1,4 @@
-Ce rôle installe Docker CE sur un système Ubuntu/Debian.
+Ce rôle installe Docker CE sur un système Rocky Linux 10.
 
 Variables :
 

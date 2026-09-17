@@ -1,6 +1,32 @@
 - name: Installer les dépendances nécessaires
-  apt:
-    name: curl
+  dnf:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - yum-utils
+    state: present
+    update_cache: yes
+
+- name: Ajouter le dépôt Kubernetes
+  yum_repository:
+    name: kubernetes
+    description: Kubernetes
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch
+    gpgcheck: yes
+    gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    state: present
+    enabled: yes
+
+- name: Installer les dépendances K3s
+  dnf:
+    name:
+      - conntrack
+      - socat
+      - ipset
+      - ipvsadm
+      - policycoreutils-python-utils
+      - container-selinux
     state: present
     update_cache: yes
 
